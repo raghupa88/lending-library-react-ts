@@ -67,7 +67,7 @@ cd lending-library-react-ts
 npm install
 ```
 
-3. **Start development server**
+3. **Start development server (Vite)**
 
 ```bash
 npm start
@@ -123,11 +123,13 @@ This application implements a complete subscription-based lending library busine
 
 ### Environment Variables
 
+Vite reads client-side env variables that start with `VITE_`. Use `import.meta.env.VITE_*` in your code.
+
 Create a `.env` file for configuration:
 
 ```
-REACT_APP_API_URL=http://localhost:3001/api
-REACT_APP_PAYMENT_KEY=your_payment_gateway_key
+VITE_API_URL=http://localhost:3001/api
+VITE_PAYMENT_KEY=your_payment_gateway_key
 ```
 
 ## 🚀 Deployment
