@@ -83,8 +83,8 @@ npm run build
 
 ### Demo Credentials
 
-- **Member Account**: rajesh@example.com / password123
-- **Admin Account**: priya@example.com / password123
+- **Member Account**: member@example.com / password123
+- **Admin Account**: admin@example.com / password123
 
 ### Subscription Plans
 

@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, RegisterData } from '../types';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { User, LoginCredentials, RegisterData } from "../types";
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -30,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check for stored user session
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -42,16 +48,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Mock login - replace with actual API call
       const mockUsers = [
-        { id: '1', name: 'Rajesh Kumar', email: 'rajesh@example.com', role: 'member' as const, plan: 'standard', joinDate: '2024-01-15', booksRead: 25, currentBooks: ['1', '4'] },
-        { id: '2', name: 'Priya Sharma', email: 'priya@example.com', role: 'admin' as const, plan: 'premium', joinDate: '2023-06-10', booksRead: 45, currentBooks: ['2', '6', '8'] },
+        {
+          id: "1",
+          name: "Member User",
+          email: "member@example.com",
+          role: "member" as const,
+          plan: "standard",
+          joinDate: "2024-01-15",
+          booksRead: 25,
+          currentBooks: ["1", "4"],
+        },
+        {
+          id: "2",
+          name: "Admin User",
+          email: "admin@example.com",
+          role: "admin" as const,
+          plan: "premium",
+          joinDate: "2023-06-10",
+          booksRead: 45,
+          currentBooks: ["2", "6", "8"],
+        },
       ];
 
-      const foundUser = mockUsers.find(u => u.email === credentials.email);
-      if (foundUser && credentials.password === 'password123') {
+      const foundUser = mockUsers.find((u) => u.email === credentials.email);
+      if (foundUser && credentials.password === "password123") {
         setUser(foundUser);
-        localStorage.setItem('user', JSON.stringify(foundUser));
+        localStorage.setItem("user", JSON.stringify(foundUser));
       } else {
-        throw new Error('Invalid credentials');
+        throw new Error("Invalid credentials");
       }
     } catch (error) {
       throw error;
@@ -68,8 +92,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: Date.now().toString(),
         name: data.name,
         email: data.email,
-        role: 'member',
-        plan: 'basic',
+        role: "member",
+        plan: "basic",
         joinDate: new Date().toISOString(),
         booksRead: 0,
         currentBooks: [],
@@ -78,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
+      localStorage.setItem("user", JSON.stringify(newUser));
     } catch (error) {
       throw error;
     } finally {
@@ -88,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   };
 
   const updateProfile = async (data: Partial<User>): Promise<void> => {
@@ -96,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const updatedUser = { ...user, ...data };
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   const value: AuthContextType = {

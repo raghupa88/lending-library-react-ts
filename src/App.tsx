@@ -1,18 +1,26 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { BookProvider } from './context/BookContext';
-import Navbar from './components/Navbar/Navbar';
-import Home from './pages/Home/Home';
-import Books from './pages/Books/Books';
-import Login from './pages/Login/Login';
-import Dashboard from './pages/Dashboard/Dashboard';
-import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
-import './App.css';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { BookProvider } from "./context/BookContext";
+import Navbar from "./components/Navbar/Navbar";
+import Home from "./pages/Home/Home";
+import Books from "./pages/Books/Books";
+import Login from "./pages/Login/Login";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import LoadingSpinner from "./components/LoadingSpinner/LoadingSpinner";
+import RoutePerfObserver from "./perf/RoutePerfObserver";
+import "./App.css";
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -42,7 +50,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -77,6 +85,7 @@ const App: React.FC = () => {
         <BookProvider>
           <Router>
             <div className="app">
+              <RoutePerfObserver />
               <Navbar />
               <main className="main-content">
                 <AppRoutes />
