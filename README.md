@@ -132,6 +132,57 @@ VITE_API_URL=http://localhost:3001/api
 VITE_PAYMENT_KEY=your_payment_gateway_key
 ```
 
+## ⚡ Performance Automation
+
+This project includes comprehensive performance validation using three complementary approaches:
+
+### 1. Puppeteer CDP - Direct Performance Metrics
+
+```bash
+npm run perf:cdp
+```
+
+- Audits all routes: `/`, `/books`, `/login`, `/dashboard`
+- Handles authentication automatically
+- Measures: Layout Count, JS Heap Size, DOM Nodes
+- Runs in visible mode for observation
+
+### 2. Lighthouse CI - Industry Standards
+
+```bash
+npm run perf:lighthouse
+```
+
+- Validates against web vitals (LCP < 2.5s, CLS < 0.1)
+- Generates HTML reports in `./lhci_reports/`
+- Enforces performance score > 70%
+
+### 3. MCP - AI-Friendly Automation
+
+```bash
+npm run perf:mcp
+```
+
+- Demonstrates Model Context Protocol integration
+- Suitable for AI-driven testing workflows
+- Tools: navigate, snapshot, click, fill, wait_for
+
+### Full Validation Suite
+
+```bash
+npm run perf:validate
+```
+
+Runs: Build → Lighthouse CI → Puppeteer CDP
+
+**Comparison**:
+
+| Tool | Best For | Metrics | AI-Friendly |
+|------|----------|---------|-------------|
+| Puppeteer CDP | NFR Validation | Full Access | No |
+| Lighthouse CI | Standard Audits | Web Vitals | No |
+| MCP | AI Automation | Limited | Yes |
+
 ## 🚀 Deployment
 
 The application is production-ready and can be deployed to:

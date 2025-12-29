@@ -33,3 +33,7 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+.lighthouseci/
+dist/
+lhci_reports/
