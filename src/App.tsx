@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -83,15 +82,13 @@ const App: React.FC = () => {
     <ThemeProvider>
       <AuthProvider>
         <BookProvider>
-          <Router>
-            <div className="app">
-              <RoutePerfObserver />
-              <Navbar />
-              <main className="main-content">
-                <AppRoutes />
-              </main>
-            </div>
-          </Router>
+          <div className="app">
+            <RoutePerfObserver />
+            <Navbar />
+            <main className="main-content">
+              <AppRoutes />
+            </main>
+          </div>
         </BookProvider>
       </AuthProvider>
     </ThemeProvider>
