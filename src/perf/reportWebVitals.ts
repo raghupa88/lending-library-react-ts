@@ -7,9 +7,9 @@ function sendMetric(metric: Metric) {
   const payload = {
     name: metric.name,
     value: metric.value,
-    delta: (metric as any).delta,
+    delta: metric.delta,
     id: metric.id,
-    entries: (metric as any).entries || undefined,
+    entries: metric.entries || undefined,
     url: location.pathname + location.search,
     userAgent: navigator.userAgent,
     connection: (navigator as any).connection?.effectiveType || null,
