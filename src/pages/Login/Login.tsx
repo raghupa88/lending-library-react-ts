@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { LocationState } from "../../types/navigation";
 import Input from "../../components/Input/Input";
 import Button from "../../components/Button/Button";
 import "./Login.css";
@@ -15,7 +16,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || "/dashboard";
+  const from = (location.state as LocationState)?.from?.pathname || "/dashboard";
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,8 +26,8 @@ const Login: React.FC = () => {
     try {
       await login({ email, password });
       navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setIsLoading(false);
     }

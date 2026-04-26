@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       ];
 
       const foundUser = mockUsers.find((u) => u.email === credentials.email);
-      if (foundUser && credentials.password === "password123") {
+      if (foundUser && credentials.password === import.meta.env.VITE_DEMO_PASSWORD) {
         setUser(foundUser);
         localStorage.setItem("user", JSON.stringify(foundUser));
       } else {
