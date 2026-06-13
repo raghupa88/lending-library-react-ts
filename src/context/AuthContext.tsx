@@ -34,6 +34,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // SSR-safe: localStorage is only accessed inside useEffect,
+  // which never runs during server-side renderToString.
   useEffect(() => {
     // Check for stored user session
     const storedUser = localStorage.getItem("user");

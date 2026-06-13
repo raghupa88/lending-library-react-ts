@@ -8,6 +8,14 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  ssr: {
+    // Explicit SSR config block — add noExternal entries here if third-party packages
+    // fail to resolve during the server build (e.g. "cannot use import statement").
+    noExternal: [],
+  },
+  build: {
+    sourcemap: true,
+  },
   test: {
     environment: 'jsdom',
     globals: true,
