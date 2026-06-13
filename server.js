@@ -15,6 +15,18 @@ async function createServer(
     const app = express()
     app.use(compression())
 
+    // Security headers applied to all responses
+    app.use((_req, res, next) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff')
+        res.setHeader('X-Frame-Options', 'DENY')
+        res.setHeader('X-XSS-Protection', '1; mode=block')
+        res.setHeader(
+            'Content-Security-Policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
+        )
+        next()
+    })
+
     let vite
     if (!isProd) {
         vite = await (await import('vite')).createServer({
@@ -29,7 +41,6 @@ async function createServer(
             },
             appType: 'custom',
         })
-        // use vite's connect instance as middleware
         app.use(vite.middlewares)
     } else {
         app.use((await import('sirv')).default('dist/client', {
@@ -38,32 +49,43 @@ async function createServer(
         }))
     }
 
-    app.use(async (req, res, next) => {
+    app.use(async (req, res) => {
         try {
             const url = req.originalUrl
 
             let template, render
             if (!isProd) {
                 // always read fresh template in dev
-                template = fs.readFileSync(resolve('index.html'), 'utf-8')
+                try {
+                    template = fs.readFileSync(resolve('index.html'), 'utf-8')
+                } catch (readErr) {
+                    throw new Error(`Failed to read index.html: ${readErr.message}`)
+                }
                 template = await vite.transformIndexHtml(url, template)
                 render = (await vite.ssrLoadModule('/src/entry-server.tsx')).render
             } else {
-                template = fs.readFileSync(resolve('dist/client/index.html'), 'utf-8')
+                try {
+                    template = fs.readFileSync(resolve('dist/client/index.html'), 'utf-8')
+                } catch (readErr) {
+                    throw new Error(`Failed to read dist/client/index.html: ${readErr.message}`)
+                }
                 render = (await import('./dist/server/entry-server.js')).render
             }
 
             const appHtml = render(url)
-
             const html = template.replace(`<!--app-html-->`, appHtml)
-
             res.status(200).set({ 'Content-Type': 'text/html' }).end(html)
         } catch (e) {
             if (!isProd && vite) {
                 vite.ssrFixStacktrace(e)
             }
-            console.log(e.stack)
-            res.status(500).end(e.stack)
+            console.error(e.stack)
+            // Never expose internals to clients in production
+            if (isProd) {
+                res.status(500).end('Internal Server Error')
+            } else {
+                res.status(500).end(e.stack)
+            }
         }
     })
 

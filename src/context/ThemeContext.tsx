@@ -24,6 +24,8 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('light');
 
+  // SSR-safe: localStorage and document are only accessed inside useEffect,
+  // which never runs during server-side renderToString.
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as Theme;
     if (storedTheme) {
