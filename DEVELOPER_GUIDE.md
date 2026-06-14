@@ -9,7 +9,7 @@ A step-by-step guide for running, testing, and understanding the complete applic
 ```
 lending-library-react-ts/
 ├── backend/          Java 21 + Spring Boot 3.3 REST API (port 8080)
-└── src/              React 18 + TypeScript frontend (port 5173)
+└── src/              React 18 + TypeScript frontend (port 3000, SSR via server.js)
 ```
 
 The frontend calls the backend over HTTP. Both run as separate processes in local dev.
@@ -21,7 +21,7 @@ The frontend calls the backend over HTTP. Both run as separate processes in loca
 | Tool | Version | Install |
 |------|---------|---------|
 | Java | 21+ | https://adoptium.net (Temurin 21 LTS) |
-| Maven | 3.9+ | https://maven.apache.org/install.html |
+| Maven | 3.9+ | https://maven.apache.org/install.html (see Windows note below) |
 | Node.js | 18+ | https://nodejs.org |
 | npm | 9+ | Bundled with Node |
 | Git | any | https://git-scm.com |
@@ -35,6 +35,8 @@ node -version        # v18.x.x or v20.x.x
 npm -version         # 9.x.x or 10.x.x
 ```
 
+> **Windows — Maven is not in winget.** Download the binary zip from https://maven.apache.org/download.cgi, extract it (e.g. to `C:\tools\apache-maven-3.9.x`), and add `C:\tools\apache-maven-3.9.x\bin` to your user `PATH` environment variable. Then open a new terminal and run `mvn -version` to confirm.
+
 ---
 
 ## 1. Clone and set up
@@ -42,6 +44,12 @@ npm -version         # 9.x.x or 10.x.x
 ```bash
 git clone https://github.com/raghupa88/lending-library-react-ts.git
 cd lending-library-react-ts
+```
+
+Copy the environment file (required before starting the frontend):
+
+```bash
+cp .env.example .env
 ```
 
 ---
@@ -84,7 +92,7 @@ npm install      # first time only
 npm run dev
 ```
 
-Frontend starts on **http://localhost:5173**
+Frontend starts on **http://localhost:3000** (served by `server.js` with SSR — not the Vite default port 5173)
 
 ---
 
@@ -111,7 +119,7 @@ Open: **http://localhost:8080/h2-console**
 
 | Field | Value |
 |-------|-------|
-| JDBC URL | `jdbc:h2:mem:lendingdb` |
+| JDBC URL | `jdbc:h2:mem:lendinglibrary` |
 | Username | `sa` |
 | Password | *(leave blank)* |
 
@@ -344,19 +352,33 @@ VITE_API_URL=http://localhost:8080/api/v1
 
 ### Port 8080 already in use
 
+**Mac/Linux:**
 ```bash
-# Find and kill the process using 8080
 lsof -i :8080
 kill -9 <PID>
+```
+
+**Windows:**
+```powershell
+netstat -ano | findstr :8080
+taskkill /PID <PID> /F
 ```
 
 ### H2 data is gone after restart
 
 This is expected — H2 is in-memory. The seed data in `data.sql` re-runs on every startup.
 
+### Browser blocks API calls (Content Security Policy)
+
+If the browser console shows a CSP error like `"connect-src" violated`, the frontend's `server.js` is missing a `connect-src` directive. Open `server.js` and ensure the CSP header includes:
+
+```
+connect-src 'self' http://localhost:8080;
+```
+
 ### CORS error in browser
 
-Make sure the frontend is running on `localhost:5173` (Vite default) or `localhost:3000`. Both are whitelisted in `SecurityConfig.java`.
+Make sure the frontend is running on `localhost:3000`. The backend whitelists both `localhost:3000` and `localhost:5173` in `SecurityConfig.java`.
 
 ### Token expired (401 after an hour)
 
