@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Subscription.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lending-library-api</a> &gt; <a href="index.source.html" class="el_package">com.lendinglibrary.domain.entity</a> &gt; <span class="el_source">Subscription.java</span></div><h1>Subscription.java</h1><pre class="source lang-java linenums">package com.lendinglibrary.domain.entity;
+
+import com.lendinglibrary.domain.enums.SubscriptionPlan;
+import com.lendinglibrary.domain.enums.SubscriptionStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;subscriptions&quot;)
+<span class="pc bpc" id="L15" title="1 of 2 branches missed.">@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder</span>
+public class Subscription {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L20">    private UUID id;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;user_id&quot;, nullable = false)
+<span class="nc" id="L24">    private User user;</span>
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+<span class="fc" id="L28">    private SubscriptionPlan plan;</span>
+
+    @Column(nullable = false, precision = 10, scale = 2)
+<span class="nc" id="L31">    private BigDecimal monthlyPrice;</span>
+
+    @Column(nullable = false)
+<span class="nc" id="L34">    private LocalDateTime startDate;</span>
+
+<span class="nc" id="L36">    private LocalDateTime endDate;</span>
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+<span class="nc" id="L41">    private SubscriptionStatus status = SubscriptionStatus.ACTIVE;</span>
+
+    @Column(nullable = false)
+<span class="fc" id="L44">    private Integer maxConcurrentLoans;</span>
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+<span class="nc" id="L48">    private LocalDateTime createdAt;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

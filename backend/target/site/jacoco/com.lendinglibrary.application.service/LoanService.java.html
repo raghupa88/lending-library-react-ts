@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoanService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lending-library-api</a> &gt; <a href="index.source.html" class="el_package">com.lendinglibrary.application.service</a> &gt; <span class="el_source">LoanService.java</span></div><h1>LoanService.java</h1><pre class="source lang-java linenums">package com.lendinglibrary.application.service;
+
+import com.lendinglibrary.api.dto.LoanRequest;
+import com.lendinglibrary.api.dto.LoanResponse;
+import com.lendinglibrary.domain.entity.Loan;
+import com.lendinglibrary.domain.entity.User;
+import com.lendinglibrary.domain.enums.LoanStatus;
+import com.lendinglibrary.domain.enums.SubscriptionStatus;
+import com.lendinglibrary.domain.exception.BusinessException;
+import com.lendinglibrary.domain.exception.ResourceNotFoundException;
+import com.lendinglibrary.infrastructure.persistence.LoanRepository;
+import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+<span class="fc" id="L22">@RequiredArgsConstructor</span>
+public class LoanService {
+
+    private final LoanRepository loanRepository;
+    private final BookService bookService;
+    private final UserService userService;
+    private final SubscriptionRepository subscriptionRepository;
+
+    public List&lt;LoanResponse&gt; getUserLoans(String email) {
+<span class="nc" id="L31">        User user = userService.findByEmail(email);</span>
+<span class="nc" id="L32">        return loanRepository.findByUser(user).stream().map(LoanResponse::from).toList();</span>
+    }
+
+    @Transactional
+    public LoanResponse borrow(LoanRequest req, String email) {
+<span class="fc" id="L37">        User user = userService.findByEmail(email);</span>
+<span class="fc" id="L38">        var book = bookService.findOrThrow(req.bookId());</span>
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (book.getAvailableCopies() &lt;= 0) {</span>
+<span class="fc" id="L41">            throw new BusinessException(&quot;No copies available for: &quot; + book.getTitle());</span>
+        }
+
+<span class="fc" id="L44">        var sub = subscriptionRepository.findByUserAndStatus(user, SubscriptionStatus.ACTIVE);</span>
+<span class="fc" id="L45">        int maxLoans = sub.map(s -&gt; s.getMaxConcurrentLoans()).orElse(3);</span>
+<span class="fc" id="L46">        long activeLoans = loanRepository.countByUserAndStatus(user, LoanStatus.ACTIVE);</span>
+
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (activeLoans &gt;= maxLoans) {</span>
+<span class="fc" id="L49">            throw new BusinessException(</span>
+                    &quot;Loan limit reached (&quot; + maxLoans + &quot; books). Return a book to borrow more.&quot;);
+        }
+
+<span class="fc" id="L53">        book.setAvailableCopies(book.getAvailableCopies() - 1);</span>
+        // book is managed entity; changes persist automatically within transaction
+
+<span class="fc" id="L56">        Loan loan = Loan.builder()</span>
+<span class="fc" id="L57">                .user(user).book(book)</span>
+<span class="fc" id="L58">                .borrowedAt(LocalDateTime.now())</span>
+<span class="fc" id="L59">                .dueDate(LocalDateTime.now().plusDays(req.daysToKeep()))</span>
+<span class="fc" id="L60">                .status(LoanStatus.ACTIVE)</span>
+<span class="fc" id="L61">                .build();</span>
+
+<span class="fc" id="L63">        return LoanResponse.from(loanRepository.save(loan));</span>
+    }
+
+    @Transactional
+    public LoanResponse returnBook(UUID loanId, String email) {
+<span class="nc" id="L68">        Loan loan = loanRepository.findById(loanId)</span>
+<span class="nc" id="L69">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Loan not found: &quot; + loanId));</span>
+
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (!loan.getUser().getEmail().equals(email)) {</span>
+<span class="nc" id="L72">            throw new BusinessException(&quot;This loan does not belong to the current user&quot;);</span>
+        }
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (loan.getStatus() == LoanStatus.RETURNED) {</span>
+<span class="nc" id="L75">            throw new BusinessException(&quot;Book already returned&quot;);</span>
+        }
+
+<span class="nc" id="L78">        loan.setStatus(LoanStatus.RETURNED);</span>
+<span class="nc" id="L79">        loan.setReturnedAt(LocalDateTime.now());</span>
+<span class="nc" id="L80">        loan.getBook().setAvailableCopies(loan.getBook().getAvailableCopies() + 1);</span>
+
+<span class="nc" id="L82">        return LoanResponse.from(loanRepository.save(loan));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

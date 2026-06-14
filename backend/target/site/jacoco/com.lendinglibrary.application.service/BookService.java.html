@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BookService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lending-library-api</a> &gt; <a href="index.source.html" class="el_package">com.lendinglibrary.application.service</a> &gt; <span class="el_source">BookService.java</span></div><h1>BookService.java</h1><pre class="source lang-java linenums">package com.lendinglibrary.application.service;
+
+import com.lendinglibrary.api.dto.BookRequest;
+import com.lendinglibrary.api.dto.BookResponse;
+import com.lendinglibrary.api.envelope.PagedResponse;
+import com.lendinglibrary.domain.entity.Book;
+import com.lendinglibrary.domain.exception.ResourceNotFoundException;
+import com.lendinglibrary.infrastructure.persistence.BookRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+<span class="fc" id="L17">@RequiredArgsConstructor</span>
+public class BookService {
+
+    private final BookRepository bookRepository;
+
+    public PagedResponse&lt;BookResponse&gt; list(String search, String category, String language,
+                                            Boolean available, int page, int size) {
+<span class="fc" id="L24">        var pageable = PageRequest.of(page, size);</span>
+<span class="fc" id="L25">        var result = bookRepository.findWithFilters(search, category, language, available, pageable);</span>
+<span class="fc" id="L26">        return PagedResponse.from(result.map(BookResponse::from));</span>
+    }
+
+    public BookResponse getById(UUID id) {
+<span class="fc" id="L30">        return BookResponse.from(findOrThrow(id));</span>
+    }
+
+    @Transactional
+    public BookResponse create(BookRequest req) {
+<span class="nc" id="L35">        Book book = Book.builder()</span>
+<span class="nc" id="L36">                .title(req.title()).author(req.author()).isbn(req.isbn())</span>
+<span class="nc" id="L37">                .description(req.description()).totalCopies(req.totalCopies())</span>
+<span class="nc" id="L38">                .availableCopies(req.totalCopies()).purchasePrice(req.purchasePrice())</span>
+<span class="nc" id="L39">                .category(req.category()).language(req.language()).pageCount(req.pageCount())</span>
+<span class="nc" id="L40">                .rating(req.rating()).coverUrl(req.coverUrl()).publishedYear(req.publishedYear())</span>
+<span class="nc" id="L41">                .build();</span>
+<span class="nc" id="L42">        return BookResponse.from(bookRepository.save(book));</span>
+    }
+
+    @Transactional
+    public BookResponse update(UUID id, BookRequest req) {
+<span class="nc" id="L47">        Book book = findOrThrow(id);</span>
+<span class="nc" id="L48">        book.setTitle(req.title());</span>
+<span class="nc" id="L49">        book.setAuthor(req.author());</span>
+<span class="nc" id="L50">        book.setIsbn(req.isbn());</span>
+<span class="nc" id="L51">        book.setDescription(req.description());</span>
+<span class="nc" id="L52">        book.setTotalCopies(req.totalCopies());</span>
+<span class="nc" id="L53">        book.setPurchasePrice(req.purchasePrice());</span>
+<span class="nc" id="L54">        book.setCategory(req.category());</span>
+<span class="nc" id="L55">        book.setLanguage(req.language());</span>
+<span class="nc" id="L56">        book.setPageCount(req.pageCount());</span>
+<span class="nc" id="L57">        book.setRating(req.rating());</span>
+<span class="nc" id="L58">        book.setCoverUrl(req.coverUrl());</span>
+<span class="nc" id="L59">        book.setPublishedYear(req.publishedYear());</span>
+<span class="nc" id="L60">        return BookResponse.from(bookRepository.save(book));</span>
+    }
+
+    public Book findOrThrow(UUID id) {
+<span class="fc" id="L64">        return bookRepository.findById(id)</span>
+<span class="fc" id="L65">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Book not found: &quot; + id));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

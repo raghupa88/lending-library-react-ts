@@ -1,0 +1,5 @@
+com/lendinglibrary/service/LoanServiceTest.class
+com/lendinglibrary/controller/AuthControllerTest.class
+com/lendinglibrary/controller/BookControllerTest.class
+com/lendinglibrary/service/BookServiceTest.class
+com/lendinglibrary/service/AuthServiceTest.class

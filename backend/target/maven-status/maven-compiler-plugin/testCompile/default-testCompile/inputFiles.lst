@@ -1,0 +1,5 @@
+/home/user/lending-library-react-ts/backend/src/test/java/com/lendinglibrary/controller/AuthControllerTest.java
+/home/user/lending-library-react-ts/backend/src/test/java/com/lendinglibrary/controller/BookControllerTest.java
+/home/user/lending-library-react-ts/backend/src/test/java/com/lendinglibrary/service/AuthServiceTest.java
+/home/user/lending-library-react-ts/backend/src/test/java/com/lendinglibrary/service/BookServiceTest.java
+/home/user/lending-library-react-ts/backend/src/test/java/com/lendinglibrary/service/LoanServiceTest.java

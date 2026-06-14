@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">lending-library-api</a> &gt; <a href="index.source.html" class="el_package">com.lendinglibrary.api.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.lendinglibrary.api.controller;
+
+import com.lendinglibrary.api.dto.*;
+import com.lendinglibrary.api.envelope.ApiResponse;
+import com.lendinglibrary.application.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(&quot;/api/v1/auth&quot;)
+<span class="fc" id="L15">@RequiredArgsConstructor</span>
+@Tag(name = &quot;Authentication&quot;)
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping(&quot;/register&quot;)
+    @Operation(summary = &quot;Register a new user&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;AuthResponse&gt;&gt; register(@Valid @RequestBody RegisterRequest req) {
+<span class="nc" id="L24">        return ResponseEntity.ok(ApiResponse.ok(authService.register(req), &quot;User registered successfully&quot;));</span>
+    }
+
+    @PostMapping(&quot;/login&quot;)
+    @Operation(summary = &quot;Login and get JWT tokens&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;AuthResponse&gt;&gt; login(@Valid @RequestBody LoginRequest req) {
+<span class="fc" id="L30">        return ResponseEntity.ok(ApiResponse.ok(authService.login(req)));</span>
+    }
+
+    @PostMapping(&quot;/refresh&quot;)
+    @Operation(summary = &quot;Refresh access token&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;AuthResponse&gt;&gt; refresh(@Valid @RequestBody RefreshRequest req) {
+<span class="nc" id="L36">        return ResponseEntity.ok(ApiResponse.ok(authService.refresh(req)));</span>
+    }
+
+    @PostMapping(&quot;/logout&quot;)
+    @Operation(summary = &quot;Logout (client should discard tokens)&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; logout() {
+        // Stateless JWT: client discards tokens; no server-side state to clear
+<span class="nc" id="L43">        return ResponseEntity.ok(ApiResponse.ok(null, &quot;Logged out successfully&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
