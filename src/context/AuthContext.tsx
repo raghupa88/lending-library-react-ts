@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import { User, LoginCredentials, RegisterData } from "../types";
+import { apiFetch } from "../lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -30,14 +31,38 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+interface AuthApiResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  plan: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+function mapAuthResponseToUser(data: AuthApiResponse): User {
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role === "admin" ? "admin" : "member",
+    plan: data.plan,
+    joinDate: new Date().toISOString(),
+    booksRead: 0,
+    currentBooks: [],
+  };
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user session
+    // Restore session from localStorage if token and user exist
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const token = localStorage.getItem("access_token");
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
@@ -46,39 +71,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials): Promise<void> => {
     setIsLoading(true);
     try {
-      // Mock login - replace with actual API call
-      const mockUsers = [
-        {
-          id: "1",
-          name: "Member User",
-          email: "member@example.com",
-          role: "member" as const,
-          plan: "standard",
-          joinDate: "2024-01-15",
-          booksRead: 25,
-          currentBooks: ["1", "4"],
-        },
-        {
-          id: "2",
-          name: "Admin User",
-          email: "admin@example.com",
-          role: "admin" as const,
-          plan: "premium",
-          joinDate: "2023-06-10",
-          booksRead: 45,
-          currentBooks: ["2", "6", "8"],
-        },
-      ];
+      const res = await apiFetch<AuthApiResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      });
 
-      const foundUser = mockUsers.find((u) => u.email === credentials.email);
-      if (foundUser && credentials.password === import.meta.env.VITE_DEMO_PASSWORD) {
-        setUser(foundUser);
-        localStorage.setItem("user", JSON.stringify(foundUser));
-      } else {
-        throw new Error("Invalid credentials");
+      if (!res.success || !res.data) {
+        throw new Error(res.error ?? "Invalid credentials");
       }
-    } catch (error) {
-      throw error;
+
+      const { accessToken, refreshToken, ...rest } = res.data;
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+
+      const loggedInUser = mapAuthResponseToUser({ ...rest, accessToken, refreshToken });
+      setUser(loggedInUser);
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
     } finally {
       setIsLoading(false);
     }
@@ -87,37 +95,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (data: RegisterData): Promise<void> => {
     setIsLoading(true);
     try {
-      // Mock registration - replace with actual API call
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: data.name,
-        email: data.email,
-        role: "member",
-        plan: "basic",
-        joinDate: new Date().toISOString(),
-        booksRead: 0,
-        currentBooks: [],
-        phone: data.phone,
-        address: data.address,
-      };
+      const [firstName, ...rest] = data.name.trim().split(" ");
+      const lastName = rest.join(" ") || "";
 
+      const res = await apiFetch<AuthApiResponse>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!res.success || !res.data) {
+        throw new Error(res.error ?? "Registration failed");
+      }
+
+      const { accessToken, refreshToken, ...rest2 } = res.data;
+      localStorage.setItem("access_token", accessToken);
+      localStorage.setItem("refresh_token", refreshToken);
+
+      const newUser = mapAuthResponseToUser({ ...rest2, accessToken, refreshToken });
       setUser(newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
+    // Best-effort server-side logout; ignore errors
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
+    }
     setUser(null);
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
   };
 
   const updateProfile = async (data: Partial<User>): Promise<void> => {
     if (!user) return;
-
     const updatedUser = { ...user, ...data };
     setUser(updatedUser);
     localStorage.setItem("user", JSON.stringify(updatedUser));
