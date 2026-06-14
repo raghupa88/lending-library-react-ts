@@ -12,6 +12,7 @@ import Home from "./pages/Home/Home";
 import Books from "./pages/Books/Books";
 import Login from "./pages/Login/Login";
 import Dashboard from "./pages/Dashboard/Dashboard";
+import Register from "./pages/Register/Register";
 import LoadingSpinner from "./components/LoadingSpinner/LoadingSpinner";
 import RoutePerfObserver from "./perf/RoutePerfObserver";
 import "./App.css";
@@ -63,6 +64,7 @@ const AppRoutes: React.FC = () => {
       <Route path="/" element={<Home />} />
       <Route path="/books" element={<Books />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route
         path="/dashboard"
         element={
