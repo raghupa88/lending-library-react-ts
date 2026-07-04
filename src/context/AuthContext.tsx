@@ -1,12 +1,6 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { User, LoginCredentials, RegisterData } from "../types";
-import { apiFetch } from "../lib/api";
+import { apiFetch, tokenStore } from "../lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -27,12 +21,9 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
+/** Matches backend AuthResponse (backend/.../api/dto/AuthResponse.java). */
 interface AuthApiResponse {
-  id: string;
+  userId: string;
   email: string;
   name: string;
   role: string;
@@ -43,10 +34,10 @@ interface AuthApiResponse {
 
 function mapAuthResponseToUser(data: AuthApiResponse): User {
   return {
-    id: data.id,
+    id: data.userId,
     name: data.name,
     email: data.email,
-    role: data.role === "admin" ? "admin" : "member",
+    role: data.role?.toLowerCase() === "admin" ? "admin" : "member",
     plan: data.plan,
     joinDate: new Date().toISOString(),
     booksRead: 0,
@@ -54,88 +45,56 @@ function mapAuthResponseToUser(data: AuthApiResponse): User {
   };
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+function restoreSession(): User | null {
+  const storedUser = localStorage.getItem("user");
+  if (!storedUser || !tokenStore.getAccess()) return null;
+  try {
+    return JSON.parse(storedUser) as User;
+  } catch {
+    tokenStore.clear();
+    return null;
+  }
+}
 
-  // SSR-safe: localStorage is only accessed inside useEffect,
-  // which never runs during server-side renderToString.
-  useEffect(() => {
-    // Restore session from localStorage if token and user exist
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("access_token");
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(restoreSession);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const login = async (credentials: LoginCredentials): Promise<void> => {
+  const authenticate = async (path: string, body: unknown): Promise<void> => {
     setIsLoading(true);
     try {
-      const res = await apiFetch<AuthApiResponse>("/auth/login", {
+      const data = await apiFetch<AuthApiResponse>(path, {
         method: "POST",
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(body),
       });
-
-      if (!res.success || !res.data) {
-        throw new Error(res.error ?? "Invalid credentials");
-      }
-
-      const { accessToken, refreshToken, ...rest } = res.data;
-      localStorage.setItem("access_token", accessToken);
-      localStorage.setItem("refresh_token", refreshToken);
-
-      const loggedInUser = mapAuthResponseToUser({ ...rest, accessToken, refreshToken });
-      setUser(loggedInUser);
-      localStorage.setItem("user", JSON.stringify(loggedInUser));
+      tokenStore.set(data.accessToken, data.refreshToken);
+      const nextUser = mapAuthResponseToUser(data);
+      setUser(nextUser);
+      localStorage.setItem("user", JSON.stringify(nextUser));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data: RegisterData): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const [firstName, ...rest] = data.name.trim().split(" ");
-      const lastName = rest.join(" ") || "";
+  const login = (credentials: LoginCredentials) => authenticate("/auth/login", credentials);
 
-      const res = await apiFetch<AuthApiResponse>("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      if (!res.success || !res.data) {
-        throw new Error(res.error ?? "Registration failed");
-      }
-
-      const { accessToken, refreshToken, ...rest2 } = res.data;
-      localStorage.setItem("access_token", accessToken);
-      localStorage.setItem("refresh_token", refreshToken);
-
-      const newUser = mapAuthResponseToUser({ ...rest2, accessToken, refreshToken });
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-    } finally {
-      setIsLoading(false);
-    }
+  const register = (data: RegisterData) => {
+    const [firstName, ...rest] = data.name.trim().split(" ");
+    return authenticate("/auth/register", {
+      firstName,
+      lastName: rest.join(" ") || "",
+      email: data.email,
+      password: data.password,
+    });
   };
 
   const logout = () => {
     // Best-effort server-side logout; ignore errors
-    const token = localStorage.getItem("access_token");
-    if (token) {
+    if (tokenStore.getAccess()) {
       apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
     }
     setUser(null);
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+    tokenStore.clear();
   };
 
   const updateProfile = async (data: Partial<User>): Promise<void> => {
@@ -145,14 +104,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    login,
-    register,
-    logout,
-    updateProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -1,16 +1,6 @@
-// Home
-export const HERO_TITLE = '.hero__title';
-export const HERO_ACTIONS = '.hero__actions';
-export const CTA_TITLE = '.cta__title';
-export const FEATURED_BOOKS_GRID = '.books-grid';
-export const FEATURES_GRID = '.features__grid';
-
-// Navbar
-export const NAVBAR_BRAND = '.navbar__brand';
-export const NAVBAR_NAV = '.navbar__nav';
-export const THEME_TOGGLE = '.theme-toggle';
-export const USER_GREETING = '.user-greeting';
-export const AUTH_BUTTONS = '.auth-buttons';
+// The redesigned screens (home, navbar) are queried by accessible role/name
+// directly in the specs; CSS selectors below cover legacy pages only and
+// shrink as each page is redesigned.
 
 // Books page
 export const BOOKS_TITLE = '.books__title';

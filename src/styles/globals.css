@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* Dark mode is driven by data-theme on <html>, not prefers-color-scheme,
+   so the in-app toggle always wins. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Design tokens — "Warm literary"
+ * Light: Reading Room · Dark: Midnight Library
+ * All foreground/background pairs are WCAG 2.2 AA validated (see docs/adr).
+ */
+:root {
+  --background: #faf6ef;
+  --surface: #ffffff;
+  --surface-2: #f3ede2;
+  --foreground: #1f1b16;
+  --muted: #5c554b;
+  --accent: #b4552d;
+  --accent-hover: #8f3e1f;
+  --accent-foreground: #ffffff;
+  --secondary: #2f5d50;
+  --secondary-foreground: #ffffff;
+  --border: #e5dccb;
+  --success: #2f7d4f;
+  --warning: #8a6508;
+  --warning-surface: #f5e9c9;
+  --danger: #a63a2b;
+  --info: #3d5a80;
+  --ring: #b4552d;
+}
+
+[data-theme="dark"] {
+  --background: #181410;
+  --surface: #221d17;
+  --surface-2: #2a241d;
+  --foreground: #f1eae0;
+  --muted: #a89f92;
+  --accent: #e07a4c;
+  --accent-hover: #e8905f;
+  /* Ink on accent: white on #e07a4c is 2.98:1 and fails AA */
+  --accent-foreground: #181410;
+  --secondary: #8fc4b3;
+  --secondary-foreground: #181410;
+  --border: #3a322a;
+  --success: #7fc79c;
+  --warning: #d9a94a;
+  --warning-surface: #3a2f1a;
+  --danger: #e08a77;
+  --info: #96b9dd;
+  --ring: #e07a4c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-ring: var(--ring);
+
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.625rem;
+  --radius-control: 0.5rem;
+
+  --shadow-soft: 0 2px 12px rgb(31 27 22 / 0.08);
+  --shadow-lift: 0 6px 24px rgb(31 27 22 / 0.12);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

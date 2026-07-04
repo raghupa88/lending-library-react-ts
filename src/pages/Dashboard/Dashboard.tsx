@@ -12,7 +12,6 @@ const Dashboard: React.FC = () => {
   if (!user) return null;
 
   const currentBooks = books.filter(book => user.currentBooks.includes(book.id));
-  const wishlistBooks = books.filter(book => user.wishlist?.includes(book.id));
 
   const handleReturnBook = (bookId: string) => {
     alert(`Book ${bookId} return requested!`);
@@ -81,19 +80,19 @@ const Dashboard: React.FC = () => {
           <h2 className="section__title">Profile Information</h2>
           <div className="profile-info">
             <div className="profile-field">
-              <label>Name</label>
+              <span className="profile-label">Name</span>
               <p>{user.name}</p>
             </div>
             <div className="profile-field">
-              <label>Email</label>
+              <span className="profile-label">Email</span>
               <p>{user.email}</p>
             </div>
             <div className="profile-field">
-              <label>Role</label>
+              <span className="profile-label">Role</span>
               <p>{user.role}</p>
             </div>
             <div className="profile-field">
-              <label>Current Plan</label>
+              <span className="profile-label">Current Plan</span>
               <p>{user.plan}</p>
             </div>
           </div>

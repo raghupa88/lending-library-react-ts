@@ -45,7 +45,7 @@ interface BookApiItem {
   isbn: string;
   available: boolean;
   rating: number;
-  coverUrl: string;
+  cover: string;
   description: string;
   publishedYear?: number;
   pageCount?: number;
@@ -71,7 +71,7 @@ function mapBook(b: BookApiItem): Book {
     isbn: b.isbn,
     available: b.available,
     rating: b.rating,
-    cover: b.coverUrl,
+    cover: b.cover,
     description: b.description,
     publishedYear: b.publishedYear,
     pages: b.pageCount,
@@ -96,18 +96,18 @@ export const BookProvider: React.FC<BookProviderProps> = ({ children }) => {
 
       const query = params.toString();
       const res = await apiFetch<PagedResponse<BookApiItem>>(`/books${query ? `?${query}` : ''}`);
-
-      if (res.success && res.data) {
-        setBooks(res.data.content.map(mapBook));
-      }
-    } catch {
-      // Keep existing books on error
+      setBooks(res.content.map(mapBook));
+    } catch (err) {
+      // Keep existing books but surface the failure for debugging
+      console.error('Failed to fetch books', err);
     } finally {
       setIsLoading(false);
     }
   }, [searchTerm, filters]);
 
   useEffect(() => {
+    // Legacy data layer: replaced by TanStack Query in the catalog redesign.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBooks();
   }, [fetchBooks]);
 

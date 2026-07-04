@@ -13,7 +13,6 @@ import {
   LOGIN_ERROR,
   LOGIN_DEMO,
   LOGIN_LINK,
-  USER_GREETING,
 } from '../helpers/selectors';
 
 // --- Login ---
@@ -105,9 +104,10 @@ authTest('logout clears session and redirects to home', async ({ authenticatedPa
   await setupBooksApiMock(page);
   await setupLogoutApiMock(page);
   await page.goto('/');
-  await authExpect(page.locator(USER_GREETING)).toBeVisible();
-  await page.getByRole('button', { name: 'Logout' }).first().click();
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  await authExpect(nav.getByRole('button', { name: 'Logout' })).toBeVisible();
+  await nav.getByRole('button', { name: 'Logout' }).click();
   await authExpect(page).toHaveURL('/');
-  await authExpect(page.locator(USER_GREETING)).not.toBeVisible();
-  await authExpect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+  await authExpect(nav.getByRole('button', { name: 'Logout' })).toHaveCount(0);
+  await authExpect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
 });
