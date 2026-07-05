@@ -136,3 +136,130 @@ export const MOCK_LOGOUT_SUCCESS = {
   success: true,
   message: 'Logged out successfully',
 };
+
+// --- Loans (backend LoanResponse.java) ---
+
+const daysFromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+export const MOCK_LOANS = {
+  success: true,
+  data: [
+    {
+      id: 'loan-1',
+      bookId: 'book-1',
+      bookTitle: 'The Great Gatsby',
+      bookAuthor: 'F. Scott Fitzgerald',
+      bookCover: null,
+      borrowedAt: daysFromNow(-3),
+      dueDate: daysFromNow(11),
+      returnedAt: null,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'loan-2',
+      bookId: 'book-3',
+      bookTitle: 'Ponniyin Selvan',
+      bookAuthor: 'Kalki Krishnamurthy',
+      bookCover: null,
+      borrowedAt: daysFromNow(-13),
+      dueDate: daysFromNow(1),
+      returnedAt: null,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'loan-3',
+      bookId: 'book-2',
+      bookTitle: 'To Kill a Mockingbird',
+      bookAuthor: 'Harper Lee',
+      bookCover: null,
+      borrowedAt: daysFromNow(-40),
+      dueDate: daysFromNow(-26),
+      returnedAt: daysFromNow(-28),
+      status: 'RETURNED',
+    },
+  ],
+};
+
+export const MOCK_LOANS_EMPTY = { success: true, data: [] };
+
+export const MOCK_BORROW_SUCCESS = {
+  success: true,
+  data: {
+    id: 'loan-new',
+    bookId: 'book-1',
+    bookTitle: 'The Great Gatsby',
+    bookAuthor: 'F. Scott Fitzgerald',
+    bookCover: null,
+    borrowedAt: daysFromNow(0),
+    dueDate: daysFromNow(14),
+    returnedAt: null,
+    status: 'ACTIVE',
+  },
+};
+
+export const MOCK_BORROW_LIMIT_FAILURE = {
+  success: false,
+  error: 'Loan limit reached (2 books). Return a book to borrow more.',
+};
+
+export const MOCK_RETURN_SUCCESS = {
+  success: true,
+  data: { ...MOCK_LOANS.data[0], returnedAt: daysFromNow(0), status: 'RETURNED' },
+};
+
+// --- Subscriptions (backend SubscriptionPlanResponse / SubscriptionResponse) ---
+
+export const MOCK_PLANS = {
+  success: true,
+  data: [
+    { id: 'basic', name: 'Basic', price: 299, maxBooks: 2, features: ['2 books at a time', 'SMS notifications'], popular: false },
+    { id: 'standard', name: 'Standard', price: 499, maxBooks: 4, features: ['4 books at a time', 'WhatsApp support'], popular: true },
+    { id: 'premium', name: 'Premium', price: 799, maxBooks: 6, features: ['6 books at a time', 'Free home delivery'], popular: false },
+    { id: 'family', name: 'Family', price: 1199, maxBooks: 8, features: ['8 books at a time', 'Home delivery', 'Community events'], popular: false },
+  ],
+};
+
+export const MOCK_SUBSCRIPTION_BASIC = {
+  success: true,
+  data: {
+    id: 'sub-1',
+    plan: 'basic',
+    monthlyPrice: 299,
+    startDate: daysFromNow(-30),
+    endDate: null,
+    status: 'active',
+    maxConcurrentLoans: 2,
+  },
+};
+
+export const MOCK_SUBSCRIBE_STANDARD_SUCCESS = {
+  success: true,
+  data: {
+    id: 'sub-2',
+    plan: 'standard',
+    monthlyPrice: 499,
+    startDate: daysFromNow(0),
+    endDate: null,
+    status: 'active',
+    maxConcurrentLoans: 4,
+  },
+};
+
+// --- Users (backend UserResponse) ---
+
+export const MOCK_PROFILE = {
+  success: true,
+  data: {
+    id: 'user-1',
+    email: 'member@example.com',
+    name: 'Test Member',
+    role: 'member',
+    phone: '+91 98765 43210',
+    address: '12 Beach Road, Chennai',
+  },
+};
+
+export const MOCK_PROFILE_UPDATED = {
+  success: true,
+  data: { ...MOCK_PROFILE.data, name: 'Test Reader', phone: '+91 90000 00000' },
+};

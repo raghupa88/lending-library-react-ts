@@ -8,6 +8,8 @@ import BookDetail from "./pages/BookDetail/BookDetail";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
+import Plans from "./pages/Plans/Plans";
+import Profile from "./pages/Profile/Profile";
 import NotFound from "./pages/NotFound/NotFound";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,6 +37,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/books" element={<Books />} />
           <Route path="/books/:id" element={<BookDetail />} />
+          <Route path="/plans" element={<Plans />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
@@ -42,6 +45,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

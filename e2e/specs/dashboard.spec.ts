@@ -1,12 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { test as authTest, expect as authExpect } from '../fixtures/auth.fixture';
-import { setupBooksApiMock, setupLogoutApiMock } from '../helpers/api-mocks';
-import {
-  DASHBOARD_TITLE,
-  STAT_CARD,
-  PROFILE_INFO,
-  SECTION_TITLE,
-} from '../helpers/selectors';
+import { setupAllApiMocks, setupBooksApiMock, setupLoansApiMock } from '../helpers/api-mocks';
+import { MOCK_LOANS_EMPTY } from '../fixtures/mock-data';
+import { expectNoA11yViolations } from '../helpers/axe';
 
 test('unauthenticated access to /dashboard redirects to /login', async ({ page }) => {
   await setupBooksApiMock(page);
@@ -14,44 +10,81 @@ test('unauthenticated access to /dashboard redirects to /login', async ({ page }
   await expect(page).toHaveURL('/login');
 });
 
-authTest('dashboard title renders for authenticated user', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
+authTest('greeting and stat cards reflect real loans', async ({ authenticatedPage: page }) => {
+  await setupAllApiMocks(page);
   await page.goto('/dashboard');
-  await authExpect(page.locator(DASHBOARD_TITLE)).toHaveText('My Dashboard');
+  await authExpect(page.getByRole('heading', { level: 1 })).toContainText(', Test');
+  // 2 active loans, 1 due soon (due in 1 day), 1 returned
+  await authExpect(page.getByText('Borrowed now').locator('..')).toContainText('2');
+  await authExpect(page.getByText('Due soon').locator('..')).toContainText('1');
+  await authExpect(page.getByText('Books read').locator('..')).toContainText('1');
 });
 
-authTest('four stat cards are rendered', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
+authTest('currently-reading tab lists active loans with due badges', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
   await page.goto('/dashboard');
-  await authExpect(page.locator(STAT_CARD)).toHaveCount(4);
+  const reading = page.getByRole('tabpanel');
+  await authExpect(
+    reading.getByRole('link', { name: 'The Great Gatsby', exact: true }),
+  ).toBeVisible();
+  await authExpect(
+    reading.getByRole('link', { name: 'Ponniyin Selvan', exact: true }),
+  ).toBeVisible();
+  await authExpect(reading.getByText(/due in 11 days/i)).toBeVisible();
+  await authExpect(reading.getByText(/due in 1 day/i)).toBeVisible();
 });
 
-authTest('plan stat shows user plan', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
+authTest('returning a book calls the API and shows a toast', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
   await page.goto('/dashboard');
-  // The Plan stat card contains the user's plan value ("basic")
-  await authExpect(page.locator(STAT_CARD).filter({ hasText: 'Plan' })).toContainText('basic');
+  await page.getByRole('button', { name: 'Return' }).first().click();
+  await authExpect(
+    page.getByRole('region', { name: 'Notifications' }).getByText(/returned "the great gatsby"/i),
+  ).toBeVisible();
 });
 
-authTest('"Currently Borrowed" section heading is visible', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
+authTest('history tab shows past loans', async ({ authenticatedPage: page }) => {
+  await setupAllApiMocks(page);
   await page.goto('/dashboard');
-  await authExpect(page.locator(SECTION_TITLE).filter({ hasText: 'Currently Borrowed' })).toBeVisible();
+  await page.getByRole('tab', { name: /history/i }).click();
+  const history = page.getByRole('tabpanel');
+  await authExpect(history.getByText('To Kill a Mockingbird')).toBeVisible();
+  await authExpect(history.getByText(/returned/i).first()).toBeVisible();
 });
 
-authTest('profile information section shows user name and email', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
+authTest('empty loans show the browse empty state', async ({ authenticatedPage: page }) => {
+  await setupAllApiMocks(page);
+  await setupLoansApiMock(page, { list: MOCK_LOANS_EMPTY });
   await page.goto('/dashboard');
-  const profile = page.locator(PROFILE_INFO);
-  await authExpect(profile).toContainText('Test Member');
-  await authExpect(profile).toContainText('member@example.com');
+  await authExpect(page.getByText('Nothing borrowed right now')).toBeVisible();
+  await authExpect(page.getByRole('link', { name: 'Browse the shelf' })).toBeVisible();
 });
 
-authTest('logout on dashboard clears session and redirects to login', async ({ authenticatedPage: page }) => {
-  await setupBooksApiMock(page);
-  await setupLogoutApiMock(page);
+authTest('subscription card shows the current plan with change link', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
   await page.goto('/dashboard');
-  await authExpect(page.locator(DASHBOARD_TITLE)).toBeVisible();
-  await page.getByRole('button', { name: 'Logout' }).first().click();
-  await authExpect(page).toHaveURL('/login');
+  const aside = page.getByRole('complementary');
+  await authExpect(aside.getByText('basic')).toBeVisible();
+  await authExpect(aside.getByText(/₹299\/month/)).toBeVisible();
+  await authExpect(aside.getByRole('link', { name: 'Change plan' })).toBeVisible();
+});
+
+authTest('edit profile link navigates to /profile', async ({ authenticatedPage: page }) => {
+  await setupAllApiMocks(page);
+  await page.goto('/dashboard');
+  await page.getByRole('link', { name: /edit profile/i }).click();
+  await authExpect(page).toHaveURL('/profile');
+});
+
+authTest('dashboard has no WCAG A/AA violations', async ({ authenticatedPage: page }) => {
+  await setupAllApiMocks(page);
+  await page.goto('/dashboard');
+  await authExpect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectNoA11yViolations(page);
 });

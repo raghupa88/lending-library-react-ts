@@ -32,6 +32,9 @@ export function Navbar() {
       <NavLink to="/books" className={navLinkClass} onClick={() => setMenuOpen(false)}>
         Browse
       </NavLink>
+      <NavLink to="/plans" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+        Plans
+      </NavLink>
       {user && (
         <NavLink to="/dashboard" className={navLinkClass} onClick={() => setMenuOpen(false)}>
           Dashboard

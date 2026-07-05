@@ -30,6 +30,9 @@ export default function Books() {
   useEffect(() => {
     setParams(
       (prev) => {
+        // No-op when the URL already matches, so this effect never clobbers
+        // unrelated param changes (e.g. pagination) on mount.
+        if ((prev.get("search") ?? "") === debouncedSearch) return prev;
         const next = new URLSearchParams(prev);
         if (debouncedSearch) next.set("search", debouncedSearch);
         else next.delete("search");
