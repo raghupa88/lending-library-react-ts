@@ -8,55 +8,66 @@ import {
   setupRegisterApiMock,
 } from '../helpers/api-mocks';
 import { MOCK_LOGIN_FAILURE, MOCK_REGISTER_FAILURE } from '../fixtures/mock-data';
-import {
-  LOGIN_TITLE,
-  LOGIN_ERROR,
-  LOGIN_DEMO,
-  LOGIN_LINK,
-  USER_GREETING,
-} from '../helpers/selectors';
+import { expectNoA11yViolations } from '../helpers/axe';
 
 // --- Login ---
 
-test('login page renders form and title', async ({ page }) => {
+test('login page renders form, demo credentials and title', async ({ page }) => {
   await setupBooksApiMock(page);
   await page.goto('/login');
-  await expect(page.locator(LOGIN_TITLE)).toHaveText('Welcome Back');
-  await expect(page.locator('input[type="email"]')).toBeVisible();
-  await expect(page.locator('input[type="password"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
-});
-
-test('demo credentials are displayed on login page', async ({ page }) => {
-  await setupBooksApiMock(page);
-  await page.goto('/login');
-  await expect(page.locator(LOGIN_DEMO)).toContainText('member@example.com');
+  await expect(page.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeVisible();
+  await expect(page.getByLabel('Email')).toBeVisible();
+  await expect(page.getByLabel('Password')).toBeVisible();
+  await expect(page.getByText('Demo credentials')).toBeVisible();
+  await expect(page.getByText('member@example.com / password123')).toBeVisible();
 });
 
 test('successful login redirects to dashboard', async ({ page }) => {
   await setupAllApiMocks(page);
   await page.goto('/login');
-  await page.locator('input[type="email"]').fill('member@example.com');
-  await page.locator('input[type="password"]').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByLabel('Email').fill('member@example.com');
+  await page.getByLabel('Password').fill('password123');
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL('/dashboard');
 });
 
-test('invalid credentials show error message', async ({ page }) => {
+test('login honours returnTo after success', async ({ page }) => {
+  await setupAllApiMocks(page);
+  await page.goto('/login?returnTo=%2Fbooks%2Fbook-1');
+  await page.getByLabel('Email').fill('member@example.com');
+  await page.getByLabel('Password').fill('password123');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL('/books/book-1');
+});
+
+test('invalid credentials show a server error alert', async ({ page }) => {
   await setupBooksApiMock(page);
   await setupLoginApiMock(page, MOCK_LOGIN_FAILURE);
   await page.goto('/login');
-  await page.locator('input[type="email"]').fill('wrong@example.com');
-  await page.locator('input[type="password"]').fill('wrongpass');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await expect(page.locator(LOGIN_ERROR)).toBeVisible();
-  await expect(page.locator(LOGIN_ERROR)).toContainText('Invalid credentials');
+  await page.getByLabel('Email').fill('wrong@example.com');
+  await page.getByLabel('Password').fill('wrongpass');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('alert')).toContainText('Invalid credentials');
 });
 
-test('"Sign up" link navigates to /register', async ({ page }) => {
+test('client-side validation flags a bad email before submit', async ({ page }) => {
   await setupBooksApiMock(page);
   await page.goto('/login');
-  await page.locator(LOGIN_LINK).click();
+  await page.getByLabel('Email').fill('not-an-email');
+  await page.getByLabel('Password').fill('whatever1');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('alert')).toContainText('Enter a valid email address');
+  const requests: string[] = [];
+  page.on('request', (req) => {
+    if (req.url().includes('/auth/login')) requests.push(req.url());
+  });
+  expect(requests).toHaveLength(0);
+});
+
+test('"Join now" link navigates to /register', async ({ page }) => {
+  await setupBooksApiMock(page);
+  await page.goto('/login');
+  await page.getByRole('main').getByRole('link', { name: 'Join now' }).click();
   await expect(page).toHaveURL('/register');
 });
 
@@ -66,48 +77,82 @@ test('unauthenticated access to /dashboard redirects to /login', async ({ page }
   await expect(page).toHaveURL('/login');
 });
 
-// --- Register ---
-
-test('register page renders form and title', async ({ page }) => {
+test('login page has no WCAG A/AA violations', async ({ page }) => {
   await setupBooksApiMock(page);
-  await page.goto('/register');
-  await expect(page.locator(LOGIN_TITLE)).toHaveText('Create Account');
-  await expect(page.locator('input[type="text"]')).toBeVisible();
-  await expect(page.locator('input[type="email"]')).toBeVisible();
-  await expect(page.locator('input[type="password"]')).toBeVisible();
+  await page.goto('/login');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
-test('successful registration redirects to dashboard', async ({ page }) => {
+// --- Register ---
+
+test('register page renders all fields', async ({ page }) => {
+  await setupBooksApiMock(page);
+  await page.goto('/register');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Join Suvadi Library' }),
+  ).toBeVisible();
+  for (const label of ['Full name', 'Email', 'Phone', 'Delivery address', 'Confirm password']) {
+    await expect(page.getByLabel(label)).toBeVisible();
+  }
+  await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
+});
+
+test('successful registration (with optional fields) redirects to dashboard', async ({
+  page,
+}) => {
   await setupAllApiMocks(page);
   await page.goto('/register');
-  await page.locator('input[type="text"]').fill('New User');
-  await page.locator('input[type="email"]').fill('newuser@example.com');
-  await page.locator('input[type="password"]').fill('password123');
-  await page.getByRole('button', { name: 'Create Account' }).click();
+  await page.getByLabel('Full name').fill('New User');
+  await page.getByLabel('Email').fill('newuser@example.com');
+  await page.getByLabel('Phone').fill('+91 98765 43210');
+  await page.getByLabel('Delivery address').fill('12 Beach Road, Chennai 600001');
+  await page.getByLabel('Password', { exact: true }).fill('password123');
+  await page.getByLabel('Confirm password').fill('password123');
+  await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page).toHaveURL('/dashboard');
 });
 
-test('registration failure shows error message', async ({ page }) => {
+test('mismatched passwords are caught client-side', async ({ page }) => {
+  await setupBooksApiMock(page);
+  await page.goto('/register');
+  await page.getByLabel('Full name').fill('New User');
+  await page.getByLabel('Email').fill('newuser@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('password123');
+  await page.getByLabel('Confirm password').fill('password124');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('alert')).toContainText("Passwords don't match");
+});
+
+test('registration failure shows a server error alert', async ({ page }) => {
   await setupBooksApiMock(page);
   await setupRegisterApiMock(page, MOCK_REGISTER_FAILURE);
   await page.goto('/register');
-  await page.locator('input[type="text"]').fill('Test User');
-  await page.locator('input[type="email"]').fill('existing@example.com');
-  await page.locator('input[type="password"]').fill('password123');
-  await page.getByRole('button', { name: 'Create Account' }).click();
-  await expect(page.locator(LOGIN_ERROR)).toBeVisible();
-  await expect(page.locator(LOGIN_ERROR)).toContainText('Email already exists');
+  await page.getByLabel('Full name').fill('Test User');
+  await page.getByLabel('Email').fill('existing@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('password123');
+  await page.getByLabel('Confirm password').fill('password123');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('alert')).toContainText('Email already exists');
+});
+
+test('register page has no WCAG A/AA violations', async ({ page }) => {
+  await setupBooksApiMock(page);
+  await page.goto('/register');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
 // --- Logout ---
 
-authTest('logout clears session and redirects to home', async ({ authenticatedPage: page }) => {
+authTest('logout clears session and stays on public page', async ({ authenticatedPage: page }) => {
   await setupBooksApiMock(page);
   await setupLogoutApiMock(page);
   await page.goto('/');
-  await authExpect(page.locator(USER_GREETING)).toBeVisible();
-  await page.getByRole('button', { name: 'Logout' }).first().click();
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  await authExpect(nav.getByRole('button', { name: 'Logout' })).toBeVisible();
+  await nav.getByRole('button', { name: 'Logout' }).click();
   await authExpect(page).toHaveURL('/');
-  await authExpect(page.locator(USER_GREETING)).not.toBeVisible();
-  await authExpect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+  await authExpect(nav.getByRole('button', { name: 'Logout' })).toHaveCount(0);
+  await authExpect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
 });

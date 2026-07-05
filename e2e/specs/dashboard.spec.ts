@@ -47,11 +47,11 @@ authTest('profile information section shows user name and email', async ({ authe
   await authExpect(profile).toContainText('member@example.com');
 });
 
-authTest('logout button on dashboard clears session and navigates home', async ({ authenticatedPage: page }) => {
+authTest('logout on dashboard clears session and redirects to login', async ({ authenticatedPage: page }) => {
   await setupBooksApiMock(page);
   await setupLogoutApiMock(page);
   await page.goto('/dashboard');
   await authExpect(page.locator(DASHBOARD_TITLE)).toBeVisible();
   await page.getByRole('button', { name: 'Logout' }).first().click();
-  await authExpect(page).toHaveURL('/');
+  await authExpect(page).toHaveURL('/login');
 });

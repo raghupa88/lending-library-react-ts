@@ -1,86 +1,104 @@
 import { test, expect } from '@playwright/test';
 import { test as authTest, expect as authExpect } from '../fixtures/auth.fixture';
 import { setupBooksApiMock } from '../helpers/api-mocks';
-import {
-  NAVBAR_BRAND,
-  NAVBAR_NAV,
-  THEME_TOGGLE,
-  USER_GREETING,
-  AUTH_BUTTONS,
-} from '../helpers/selectors';
+import { expectNoA11yViolations } from '../helpers/axe';
 
 test.beforeEach(async ({ page }) => {
   await setupBooksApiMock(page);
 });
 
-test('navbar brand link is visible', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator(NAVBAR_BRAND)).toBeVisible();
-  await expect(page.locator(NAVBAR_BRAND)).toContainText('Library');
-});
-
-test('Home and Books nav links are always visible when unauthenticated', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator(`${NAVBAR_NAV} a[href="/"]`)).toBeVisible();
-  await expect(page.locator(`${NAVBAR_NAV} a[href="/books"]`)).toBeVisible();
-});
-
-test('Dashboard nav link is hidden when unauthenticated', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator(`${NAVBAR_NAV} a[href="/dashboard"]`)).not.toBeVisible();
-});
-
-test('Login button is visible in navbar when unauthenticated', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator(AUTH_BUTTONS).getByRole('button', { name: 'Login' })).toBeVisible();
-});
-
-test('active class is applied to Books link on /books', async ({ page }) => {
+test('navbar wordmark is visible and links home', async ({ page }) => {
   await page.goto('/books');
-  await expect(page.locator(`${NAVBAR_NAV} a[href="/books"]`)).toHaveClass(/active/);
-});
-
-test('active class is applied to Home link on /', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator(`${NAVBAR_NAV} a[href="/"]`)).toHaveClass(/active/);
-});
-
-test('brand link navigates to home from /books', async ({ page }) => {
-  await page.goto('/books');
-  await page.locator(NAVBAR_BRAND).click();
+  const brand = page.getByRole('link', { name: /suvadi — home/i });
+  await expect(brand).toBeVisible();
+  await brand.click();
   await expect(page).toHaveURL('/');
 });
 
-test('theme toggle button is visible', async ({ page }) => {
+test('Browse link is visible when unauthenticated', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator(THEME_TOGGLE)).toBeVisible();
+  await expect(
+    page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Browse' }),
+  ).toBeVisible();
 });
 
-test('theme toggle switches body data-theme to dark', async ({ page }) => {
+test('Dashboard link is hidden when unauthenticated', async ({ page }) => {
   await page.goto('/');
-  // Wait for ThemeContext useEffect to set initial data-theme
-  await expect(page.locator('body')).toHaveAttribute('data-theme', 'light');
-  await page.locator(THEME_TOGGLE).click();
-  await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
+  await expect(
+    page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard' }),
+  ).toHaveCount(0);
 });
 
-test('theme toggle cycles back to light on second click', async ({ page }) => {
+test('Sign in and Join now are visible when unauthenticated', async ({ page }) => {
   await page.goto('/');
-  await page.locator(THEME_TOGGLE).click();
-  await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
-  await page.locator(THEME_TOGGLE).click();
-  await expect(page.locator('body')).toHaveAttribute('data-theme', 'light');
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  await expect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await expect(nav.getByRole('button', { name: 'Join now' })).toBeVisible();
 });
 
-authTest('Dashboard nav link is visible when authenticated', async ({ authenticatedPage: page }) => {
+test('skip link jumps to main content', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  const skipLink = page.getByRole('link', { name: /skip to content/i });
+  await expect(skipLink).toBeFocused();
+  await skipLink.press('Enter');
+  await expect(page).toHaveURL('/#main');
+});
+
+test('theme toggle switches html data-theme to dark and back', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: /switch to dark theme/i }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: /switch to light theme/i }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
+test('theme preference persists across reloads', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /switch to dark theme/i }).click();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('mobile menu opens as a sheet with nav links', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 720 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Menu' });
+  await expect(sheet.getByRole('link', { name: 'Browse' })).toBeVisible();
+  await expect(sheet.getByRole('link', { name: 'Sign in' })).toBeVisible();
+});
+
+test('footer renders explore links', async ({ page }) => {
+  await page.goto('/');
+  const footer = page.getByRole('navigation', { name: 'Footer' });
+  await expect(footer.getByRole('link', { name: 'Browse books' })).toBeVisible();
+  await expect(footer.getByRole('link', { name: 'Become a member' })).toBeVisible();
+});
+
+authTest('Dashboard link is visible when authenticated', async ({ authenticatedPage: page }) => {
   await setupBooksApiMock(page);
   await page.goto('/');
-  await authExpect(page.locator(`${NAVBAR_NAV} a[href="/dashboard"]`)).toBeVisible();
+  await authExpect(
+    page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Dashboard', exact: true }),
+  ).toBeVisible();
 });
 
-authTest('user greeting is visible when authenticated', async ({ authenticatedPage: page }) => {
+authTest('avatar and logout are visible when authenticated', async ({
+  authenticatedPage: page,
+}) => {
   await setupBooksApiMock(page);
   await page.goto('/');
-  await authExpect(page.locator(USER_GREETING)).toBeVisible();
-  await authExpect(page.locator(USER_GREETING)).toContainText('Hi,');
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  await authExpect(nav.getByRole('link', { name: /dashboard for test member/i })).toBeVisible();
+  await authExpect(nav.getByRole('button', { name: 'Logout' })).toBeVisible();
+});
+
+test('books catalog page has no WCAG A/AA violations', async ({ page }) => {
+  await page.goto('/books');
+  await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  await expectNoA11yViolations(page);
 });

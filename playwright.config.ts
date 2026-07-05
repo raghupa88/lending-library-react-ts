@@ -1,4 +1,12 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// Some managed environments pre-install Chromium at a fixed path and disable
+// browser downloads; fall back to Playwright's own browser otherwise.
+const PREINSTALLED_CHROMIUM = '/opt/pw-browsers/chromium';
+const launchOptions = existsSync(PREINSTALLED_CHROMIUM)
+  ? { executablePath: PREINSTALLED_CHROMIUM }
+  : {};
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,7 +28,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], launchOptions },
     },
   ],
 

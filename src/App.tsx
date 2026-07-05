@@ -1,32 +1,22 @@
-import React from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import { BookProvider } from "./context/BookContext";
-import Navbar from "./components/Navbar/Navbar";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+import { MemberShell } from "./components/layout/MemberShell";
+import { LoadingSpinner } from "./components/ui/loading";
 import Home from "./pages/Home/Home";
 import Books from "./pages/Books/Books";
+import BookDetail from "./pages/BookDetail/BookDetail";
 import Login from "./pages/Login/Login";
-import Dashboard from "./pages/Dashboard/Dashboard";
 import Register from "./pages/Register/Register";
-import LoadingSpinner from "./components/LoadingSpinner/LoadingSpinner";
-import RoutePerfObserver from "./perf/RoutePerfObserver";
-import "./App.css";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import NotFound from "./pages/NotFound/NotFound";
 
-// Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <LoadingSpinner size="lg" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -38,63 +28,25 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   return <>{children}</>;
 };
 
-// Admin Route Component
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="loading-container">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!user || user.role !== "admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-// Main App Routes
-const AppRoutes: React.FC = () => {
+export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/books" element={<Books />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
+        <Route element={<MemberShell />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/books" element={<Books />} />
+          <Route path="/books/:id" element={<BookDetail />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
-};
-
-// Main App Component
-const App: React.FC = () => {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BookProvider>
-          <div className="app">
-            <RoutePerfObserver />
-            <Navbar />
-            <main className="main-content">
-              <AppRoutes />
-            </main>
-          </div>
-        </BookProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
-};
-
-export default App;
+}

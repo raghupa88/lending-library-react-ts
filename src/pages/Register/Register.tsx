@@ -1,98 +1,157 @@
-import React, { useState, FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import Input from "../../components/Input/Input";
-import Button from "../../components/Button/Button";
-import "../../pages/Login/Login.css";
+import { registerSchema, type RegisterFormValues } from "../../lib/schemas/auth";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { Field } from "../../components/ui/field";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Button } from "../../components/ui/button";
 
-const Register: React.FC = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { register } = useAuth();
+export default function Register() {
+  const { register: registerAccount } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [serverError, setServerError] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const returnTo = params.get("returnTo") || "/dashboard";
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) });
+
+  const onSubmit = async (values: RegisterFormValues) => {
+    setServerError("");
     try {
-      await register({ name, email, password, phone: "", address: "" });
-      navigate("/dashboard", { replace: true });
+      await registerAccount({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        phone: values.phone ?? "",
+        address: values.address ?? "",
+      });
+      navigate(returnTo, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setIsLoading(false);
+      setServerError(err instanceof Error ? err.message : "Registration failed");
     }
   };
 
   return (
-    <div className="login">
-      <div className="container">
-        <div className="login__card">
-          <div className="login__header">
-            <h1 className="login__title">Create Account</h1>
-            <p className="login__description">
-              Join XXXXX Library today
-            </p>
-          </div>
+    <div className="mx-auto flex max-w-md items-center px-4 py-10 sm:px-6">
+      <Card className="w-full">
+        <CardHeader className="text-center">
+          <h1 className="font-display text-2xl font-semibold">Join Suvadi Library</h1>
+          <p className="text-sm text-muted">
+            Create an account to start borrowing — pick a plan afterwards.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+            {serverError && (
+              <p
+                role="alert"
+                className="flex items-center gap-2 rounded-(--radius-control) bg-danger/10 px-3 py-2 text-sm text-danger"
+              >
+                <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+                {serverError}
+              </p>
+            )}
 
-          <form className="login__form" onSubmit={handleSubmit}>
-            {error && <div className="login__error">{error}</div>}
+            <Field label="Full name" error={errors.name?.message}>
+              {(props) => (
+                <Input
+                  {...props}
+                  autoComplete="name"
+                  placeholder="Priya Raman"
+                  {...register("name")}
+                />
+              )}
+            </Field>
 
-            <Input
-              type="text"
-              label="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              fullWidth
-              placeholder="Enter your full name"
-            />
+            <Field label="Email" error={errors.email?.message}>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  {...register("email")}
+                />
+              )}
+            </Field>
 
-            <Input
-              type="email"
-              label="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              fullWidth
-              placeholder="Enter your email"
-            />
+            <Field
+              label="Phone"
+              optional
+              error={errors.phone?.message}
+              hint="Used for delivery updates on premium plans"
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="+91 98765 43210"
+                  {...register("phone")}
+                />
+              )}
+            </Field>
 
-            <Input
-              type="password"
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              fullWidth
-              placeholder="Choose a password"
-            />
+            <Field label="Delivery address" optional error={errors.address?.message}>
+              {(props) => (
+                <Textarea
+                  {...props}
+                  rows={2}
+                  autoComplete="street-address"
+                  placeholder="House, street, city, PIN"
+                  {...register("address")}
+                />
+              )}
+            </Field>
 
-            <div className="login__actions">
-              <Button type="submit" fullWidth loading={isLoading}>
-                Create Account
-              </Button>
-            </div>
+            <Field label="Password" error={errors.password?.message} hint="At least 8 characters">
+              {(props) => (
+                <Input
+                  {...props}
+                  type="password"
+                  autoComplete="new-password"
+                  {...register("password")}
+                />
+              )}
+            </Field>
+
+            <Field label="Confirm password" error={errors.confirmPassword?.message}>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="password"
+                  autoComplete="new-password"
+                  {...register("confirmPassword")}
+                />
+              )}
+            </Field>
+
+            <Button type="submit" size="lg" disabled={isSubmitting} className="mt-1 w-full">
+              {isSubmitting ? "Creating account…" : "Create account"}
+            </Button>
           </form>
 
-          <div className="login__footer">
-            <p>
-              Already have an account?{" "}
-              <Link to="/login" className="login__link">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
+          <p className="mt-5 text-center text-sm text-muted">
+            Already a member?{" "}
+            <Link
+              to={`/login${params.get("returnTo") ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
+              className="font-medium text-accent hover:text-accent-hover"
+            >
+              Sign in
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Register;
+}

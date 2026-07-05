@@ -97,7 +97,7 @@
   gap: 1.5rem;
 }
 
-.profile-field label {
+.profile-field .profile-label {
   display: block;
   font-weight: 600;
   color: #374151;
