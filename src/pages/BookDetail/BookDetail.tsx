@@ -1,19 +1,30 @@
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, BookMarked, Star } from "lucide-react";
 import { useBookQuery } from "../../features/books/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
+import { useToast } from "../../components/ui/toast";
+import { useAuth } from "../../context/AuthContext";
 
-/**
- * Book detail (M3) — minimal version shipped with the foundation branch to fix
- * the previously unrouted /books/:id link. The full design (borrow flow,
- * reviews, similar books) lands with the catalog and member-core branches.
- */
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: book, isLoading, isError } = useBookQuery(id);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBorrow = () => {
+    if (!user) {
+      navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    // Real borrow mutation arrives with the member-core release.
+    toast("success", "Borrowing from the app arrives with the member release — stay tuned!");
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -59,6 +70,12 @@ export default function BookDetail() {
               {book.publishedYear != null && (
                 <Badge variant="outline">{book.publishedYear}</Badge>
               )}
+              {book.rating != null && (
+                <Badge variant="outline">
+                  <Star className="size-3 fill-current text-warning" aria-hidden="true" />
+                  {book.rating.toFixed(1)}
+                </Badge>
+              )}
             </div>
 
             <p className="mt-3">
@@ -70,6 +87,18 @@ export default function BookDetail() {
                 <Badge variant="danger">Currently borrowed out</Badge>
               )}
             </p>
+
+            <div className="mt-6">
+              <Button size="lg" disabled={!book.available} onClick={handleBorrow}>
+                <BookMarked aria-hidden="true" />
+                {book.available ? "Borrow this book" : "Currently unavailable"}
+              </Button>
+              {!user && book.available && (
+                <p className="mt-2 text-sm text-muted">
+                  You'll be asked to sign in before borrowing.
+                </p>
+              )}
+            </div>
 
             {book.description && (
               <p className="mt-6 max-w-prose leading-relaxed text-muted">{book.description}</p>

@@ -97,9 +97,7 @@ authTest('avatar and logout are visible when authenticated', async ({
   await authExpect(nav.getByRole('button', { name: 'Logout' })).toBeVisible();
 });
 
-// Un-skip when the catalog page is redesigned: the legacy Books page ships its
-// own colors that fail contrast on the new token background.
-test.fixme('books catalog page has no WCAG A/AA violations', async ({ page }) => {
+test('books catalog page has no WCAG A/AA violations', async ({ page }) => {
   await page.goto('/books');
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
   await expectNoA11yViolations(page);

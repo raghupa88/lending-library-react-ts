@@ -6,14 +6,15 @@ export type SelectProps = SelectHTMLAttributes<HTMLSelectElement>;
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, children, ...props }, ref) => (
-    <span className="relative inline-flex w-full">
+    // Width utilities in className size the wrapper so the chevron stays
+    // anchored to the select's own right edge.
+    <span className={cn("relative inline-flex", className)}>
       <select
         ref={ref}
         className={cn(
           "h-10 w-full appearance-none rounded-(--radius-control) border border-border bg-surface pr-9 pl-3 text-sm text-foreground",
           "focus-visible:border-accent",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          className,
         )}
         {...props}
       >

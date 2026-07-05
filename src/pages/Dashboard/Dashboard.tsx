@@ -1,25 +1,14 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useBooks } from '../../context/BookContext';
-import BookCard from '../../components/BookCard/BookCard';
 import Button from '../../components/Button/Button';
 import './Dashboard.css';
 
+// Legacy screen: replaced wholesale by the member-core redesign, which wires
+// real loans from GET /loans instead of the always-empty user.currentBooks.
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const { books } = useBooks();
 
   if (!user) return null;
-
-  const currentBooks = books.filter(book => user.currentBooks.includes(book.id));
-
-  const handleReturnBook = (bookId: string) => {
-    alert(`Book ${bookId} return requested!`);
-  };
-
-  const handleRenewBook = (bookId: string) => {
-    alert(`Book ${bookId} renewed!`);
-  };
 
   return (
     <div className="dashboard">
@@ -39,7 +28,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="stat-card">
             <h3>Currently Reading</h3>
-            <p className="stat-number">{currentBooks.length}</p>
+            <p className="stat-number">0</p>
           </div>
           <div className="stat-card">
             <h3>Plan</h3>
@@ -54,25 +43,7 @@ const Dashboard: React.FC = () => {
         {/* Current Books */}
         <section className="dashboard__section">
           <h2 className="section__title">Currently Borrowed</h2>
-          {currentBooks.length > 0 ? (
-            <div className="books__grid">
-              {currentBooks.map(book => (
-                <div key={book.id} className="borrowed-book">
-                  <BookCard book={book} />
-                  <div className="borrowed-book__actions">
-                    <Button size="sm" onClick={() => handleReturnBook(book.id)}>
-                      Return
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleRenewBook(book.id)}>
-                      Renew
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="empty-state">No books currently borrowed</p>
-          )}
+          <p className="empty-state">No books currently borrowed</p>
         </section>
 
         {/* Profile Section */}

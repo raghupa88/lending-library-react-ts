@@ -1,142 +1,226 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useBooks } from '../../context/BookContext';
-import BookCard from '../../components/BookCard/BookCard';
-import Input from '../../components/Input/Input';
-import Button from '../../components/Button/Button';
-import './Books.css';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { SearchX, Search } from "lucide-react";
+import { useBooksQuery } from "../../features/books/queries";
+import { BookCard } from "../../features/books/BookCard";
+import { Input } from "../../components/ui/input";
+import { Select } from "../../components/ui/select";
+import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
+import { EmptyState } from "../../components/ui/empty-state";
+import { useDebounce } from "../../lib/useDebounce";
+import { cn } from "../../lib/cn";
 
-const Books: React.FC = () => {
-  const navigate = useNavigate();
-  const { filteredBooks, filters, setFilters, setSearchTerm, searchTerm } = useBooks();
-  const [selectedGenre, setSelectedGenre] = useState(filters.genre || '');
-  const [selectedLanguage, setSelectedLanguage] = useState(filters.language || '');
-  const [showAvailableOnly, setShowAvailableOnly] = useState(filters.available || false);
+const GENRES = ["Fiction", "Historical Fiction", "Non-Fiction", "Self-Help", "Technology"];
+const LANGUAGES = ["English", "Tamil"];
+const PAGE_SIZE = 24;
 
-  const genres = ['Fiction', 'Non-fiction', 'Historical Fiction', 'Fantasy', 'Children', 'Biography', 'Tamil Literature'];
-  const languages = ['English', 'Tamil', 'Hindi', 'Malayalam'];
+export default function Books() {
+  const [params, setParams] = useSearchParams();
+  const genre = params.get("genre") ?? "";
+  const language = params.get("language") ?? "";
+  const availableOnly = params.get("available") === "true";
+  const page = Math.max(0, Number(params.get("page") ?? "0") || 0);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-  };
+  // Search input is local state, debounced into the URL so typing doesn't
+  // spam history or the API.
+  const [searchInput, setSearchInput] = useState(params.get("search") ?? "");
+  const debouncedSearch = useDebounce(searchInput.trim());
 
-  const handleFilterChange = () => {
-    setFilters({
-      genre: selectedGenre || undefined,
-      language: selectedLanguage || undefined,
-      available: showAvailableOnly || undefined,
+  useEffect(() => {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (debouncedSearch) next.set("search", debouncedSearch);
+        else next.delete("search");
+        next.delete("page");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [debouncedSearch, setParams]);
+
+  const updateParam = (key: string, value: string) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value);
+      else next.delete(key);
+      next.delete("page");
+      return next;
     });
   };
 
+  const setPage = (nextPage: number) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nextPage > 0) next.set("page", String(nextPage));
+      else next.delete("page");
+      return next;
+    });
+  };
+
+  const { data, isLoading, isError } = useBooksQuery({
+    search: debouncedSearch || undefined,
+    genre: genre || undefined,
+    language: language || undefined,
+    available: availableOnly || undefined,
+    page,
+    size: PAGE_SIZE,
+  });
+
+  const books = data?.content ?? [];
+  const hasFilters = Boolean(debouncedSearch || genre || language || availableOnly);
+
   const clearFilters = () => {
-    setSelectedGenre('');
-    setSelectedLanguage('');
-    setShowAvailableOnly(false);
-    setFilters({});
-    setSearchTerm('');
-  };
-
-  const handleViewDetails = (bookId: string) => {
-    navigate(`/books/${bookId}`);
-  };
-
-  const handleReserve = (bookId: string) => {
-    // Mock reservation - in real app, this would make API call
-    alert(`Book ${bookId} reserved successfully!`);
+    setSearchInput("");
+    setParams({}, { replace: true });
   };
 
   return (
-    <div className="books">
-      <div className="container">
-        <div className="books__header">
-          <h1 className="books__title">Book Catalog</h1>
-          <p className="books__description">
-            Discover your next great read from our extensive collection
-          </p>
-        </div>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div>
+        <h1 className="font-display text-3xl font-semibold sm:text-4xl">The shelf</h1>
+        <p className="mt-1 text-muted" aria-live="polite">
+          {data
+            ? `${data.totalElements} book${data.totalElements === 1 ? "" : "s"}${hasFilters ? " match your filters" : " in the catalog"}`
+            : "Loading the catalog…"}
+        </p>
+      </div>
 
-        {/* Search and Filters */}
-        <div className="books__filters">
-          <div className="filters__search">
+      {/* Toolbar */}
+      <div className="sticky top-16 z-30 -mx-4 mt-6 border-y border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative flex-1">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
+            />
             <Input
-              type="text"
-              placeholder="Search books, authors..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              fullWidth
+              type="search"
+              aria-label="Search books by title or author"
+              placeholder="Search by title or author…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9"
             />
           </div>
-
-          <div className="filters__controls">
-            <select
-              value={selectedGenre}
-              onChange={(e) => setSelectedGenre(e.target.value)}
-              className="filter-select"
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              aria-label="Filter by genre"
+              value={genre}
+              onChange={(e) => updateParam("genre", e.target.value)}
+              className="w-44"
             >
-              <option value="">All Genres</option>
-              {genres.map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
+              <option value="">All genres</option>
+              {GENRES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
               ))}
-            </select>
-
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="filter-select"
+            </Select>
+            <Select
+              aria-label="Filter by language"
+              value={language}
+              onChange={(e) => updateParam("language", e.target.value)}
+              className="w-36"
             >
-              <option value="">All Languages</option>
-              {languages.map(language => (
-                <option key={language} value={language}>{language}</option>
+              <option value="">All languages</option>
+              {LANGUAGES.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
               ))}
-            </select>
-
-            <label className="filter-checkbox">
-              <input
-                type="checkbox"
-                checked={showAvailableOnly}
-                onChange={(e) => setShowAvailableOnly(e.target.checked)}
-              />
-              Available only
-            </label>
-
-            <Button onClick={handleFilterChange} size="sm">
-              Apply Filters
-            </Button>
-
-            <Button variant="outline" onClick={clearFilters} size="sm">
-              Clear
-            </Button>
+            </Select>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={availableOnly}
+              onClick={() => updateParam("available", availableOnly ? "" : "true")}
+              className={cn(
+                "h-10 rounded-full border px-4 text-sm font-medium transition-colors",
+                availableOnly
+                  ? "border-accent bg-accent text-accent-foreground"
+                  : "border-border bg-surface text-muted hover:text-foreground",
+              )}
+            >
+              Available now
+            </button>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Clear all
+              </Button>
+            )}
           </div>
-        </div>
-
-        {/* Results */}
-        <div className="books__results">
-          <p className="results__count">
-            {filteredBooks.length} books found
-          </p>
-
-          <div className="books__grid">
-            {filteredBooks.map(book => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onReserve={handleReserve}
-                onViewDetails={handleViewDetails}
-              />
-            ))}
-          </div>
-
-          {filteredBooks.length === 0 && (
-            <div className="no-results">
-              <h3>No books found</h3>
-              <p>Try adjusting your search or filter criteria</p>
-              <Button onClick={clearFilters}>Clear Filters</Button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Grid */}
+      {isLoading ? (
+        <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <li key={i}>
+              <Skeleton className="aspect-[2/3] w-full" />
+              <Skeleton className="mt-2 h-4 w-3/4" />
+              <Skeleton className="mt-1.5 h-3 w-1/2" />
+            </li>
+          ))}
+        </ul>
+      ) : isError ? (
+        <EmptyState
+          className="mt-8"
+          icon={<SearchX aria-hidden="true" />}
+          title="Couldn't load the shelf"
+          description="Something went wrong talking to the library. Try again in a moment."
+        />
+      ) : books.length === 0 ? (
+        <EmptyState
+          className="mt-8"
+          icon={<SearchX aria-hidden="true" />}
+          title="No books match"
+          description="Try a different search or loosen the filters."
+          action={
+            hasFilters ? (
+              <Button variant="secondary" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <>
+          <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {books.map((book) => (
+              <li key={book.id}>
+                <BookCard book={book} className="h-full" />
+              </li>
+            ))}
+          </ul>
+
+          {data && data.totalPages > 1 && (
+            <nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!data.hasPrev}
+                onClick={() => setPage(page - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted">
+                Page {data.currentPage + 1} of {data.totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!data.hasNext}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </Button>
+            </nav>
+          )}
+        </>
+      )}
     </div>
   );
-};
-
-export default Books;
+}

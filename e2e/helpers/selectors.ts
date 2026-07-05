@@ -1,15 +1,6 @@
-// The redesigned screens (home, navbar) are queried by accessible role/name
-// directly in the specs; CSS selectors below cover legacy pages only and
-// shrink as each page is redesigned.
-
-// Books page
-export const BOOKS_TITLE = '.books__title';
-export const BOOKS_GRID = '.books__grid';
-export const BOOK_CARD = '.book-card';
-export const RESULTS_COUNT = '.results__count';
-export const FILTER_SELECT = '.filter-select';
-export const FILTER_CHECKBOX = '.filter-checkbox';
-export const NO_RESULTS = '.no-results';
+// The redesigned screens (home, navbar, catalog, book detail) are queried by
+// accessible role/name directly in the specs; CSS selectors below cover
+// legacy pages only and shrink as each page is redesigned.
 
 // Auth (login / register share the .login__ namespace)
 export const LOGIN_TITLE = '.login__title';

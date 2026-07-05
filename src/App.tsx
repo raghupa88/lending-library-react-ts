@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { BookProvider } from "./context/BookContext";
 import { MemberShell } from "./components/layout/MemberShell";
 import { LoadingSpinner } from "./components/ui/loading";
 import Home from "./pages/Home/Home";
@@ -31,8 +30,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 export default function App() {
   return (
-    <BookProvider>
-      <Routes>
+    <Routes>
         <Route element={<MemberShell />}>
           <Route path="/" element={<Home />} />
           <Route path="/books" element={<Books />} />
@@ -48,8 +46,7 @@ export default function App() {
             }
           />
           <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BookProvider>
+      </Route>
+    </Routes>
   );
 }
