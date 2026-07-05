@@ -85,6 +85,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       lastName: rest.join(" ") || "",
       email: data.email,
       password: data.password,
+      phone: data.phone || undefined,
+      address: data.address || undefined,
     });
   };
 
