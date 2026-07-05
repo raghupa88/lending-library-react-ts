@@ -1,13 +1,16 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, BookMarked, Star } from "lucide-react";
 import { useBookQuery } from "../../features/books/queries";
+import { useBorrowBook, useMyLoansQuery, DEFAULT_LOAN_DAYS } from "../../features/loans/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { useToast } from "../../components/ui/toast";
 import { useAuth } from "../../context/AuthContext";
+import { ApiError } from "../../lib/api";
+import { cn } from "../../lib/cn";
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,14 +19,43 @@ export default function BookDetail() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const borrowBook = useBorrowBook();
+  const { data: loans } = useMyLoansQuery(Boolean(user));
+
+  const alreadyBorrowed = Boolean(
+    loans?.some((l) => l.bookId === id && !l.returnedAt),
+  );
 
   const handleBorrow = () => {
-    if (!user) {
+    if (!user || !id) {
       navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
       return;
     }
-    // Real borrow mutation arrives with the member-core release.
-    toast("success", "Borrowing from the app arrives with the member release — stay tuned!");
+    borrowBook.mutate(id, {
+      onSuccess: (loan) =>
+        toast(
+          "success",
+          `Borrowed "${loan.bookTitle}" — due back in ${DEFAULT_LOAN_DAYS} days.`,
+          <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+            View on your dashboard →
+          </Link>,
+        ),
+      onError: (err) => {
+        const message = err instanceof ApiError ? err.message : "Couldn't borrow this book";
+        toast(
+          "error",
+          message,
+          /limit/i.test(message) ? (
+            <Link
+              to="/plans"
+              className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
+            >
+              Upgrade your plan
+            </Link>
+          ) : undefined,
+        );
+      },
+    });
   };
 
   return (
@@ -89,9 +121,19 @@ export default function BookDetail() {
             </p>
 
             <div className="mt-6">
-              <Button size="lg" disabled={!book.available} onClick={handleBorrow}>
+              <Button
+                size="lg"
+                disabled={!book.available || alreadyBorrowed || borrowBook.isPending}
+                onClick={handleBorrow}
+              >
                 <BookMarked aria-hidden="true" />
-                {book.available ? "Borrow this book" : "Currently unavailable"}
+                {alreadyBorrowed
+                  ? "Already on your shelf"
+                  : book.available
+                    ? borrowBook.isPending
+                      ? "Borrowing…"
+                      : "Borrow this book"
+                    : "Currently unavailable"}
               </Button>
               {!user && book.available && (
                 <p className="mt-2 text-sm text-muted">

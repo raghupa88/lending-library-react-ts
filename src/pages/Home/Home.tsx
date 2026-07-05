@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpenCheck, Truck, Sparkles, Library } from "lucide-react";
 import { useBooksQuery } from "../../features/books/queries";
+import { usePlansQuery, formatMaxBooks } from "../../features/subscriptions/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -27,16 +28,10 @@ const steps = [
   },
 ];
 
-const planTeasers = [
-  { name: "Basic", price: "₹299", books: "2 books at a time", popular: false },
-  { name: "Standard", price: "₹499", books: "4 books at a time", popular: true },
-  { name: "Premium", price: "₹799", books: "6 books + home delivery", popular: false },
-  { name: "Family", price: "₹1199", books: "8 books for the whole family", popular: false },
-];
-
 export default function Home() {
   const navigate = useNavigate();
   const { data, isLoading } = useBooksQuery({ size: 6 });
+  const { data: plans } = usePlansQuery();
   const featured = data?.content ?? [];
 
   return (
@@ -61,9 +56,12 @@ export default function Home() {
               Browse the shelf
               <ArrowRight aria-hidden="true" />
             </Button>
-            <a href="#plans" className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}>
+            <Link
+              to="/plans"
+              className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}
+            >
               View plans
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -165,27 +163,31 @@ export default function Home() {
         </h2>
         <p className="mt-1 text-muted">Simple monthly pricing. Pause or switch anytime.</p>
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {planTeasers.map((plan) => (
-            <Card
-              key={plan.name}
-              className={cn("relative", plan.popular && "border-accent shadow-lift")}
-            >
-              {plan.popular && (
-                <Badge variant="accent" className="absolute -top-2.5 left-4">
-                  Popular
-                </Badge>
-              )}
-              <CardHeader>
-                <CardTitle className="font-display">{plan.name}</CardTitle>
-                <div>
-                  <span className="font-display text-3xl font-semibold">{plan.price}</span>
-                  <span className="text-sm text-muted">/month</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted">{plan.books}</p>
-              </CardContent>
-            </Card>
+          {(plans ?? []).map((plan) => (
+            <Link key={plan.id} to="/plans" className="group">
+              <Card
+                className={cn(
+                  "relative h-full transition-shadow group-hover:shadow-lift",
+                  plan.popular && "border-accent shadow-lift",
+                )}
+              >
+                {plan.popular && (
+                  <Badge variant="accent" className="absolute -top-2.5 left-4">
+                    Popular
+                  </Badge>
+                )}
+                <CardHeader>
+                  <CardTitle className="font-display">{plan.name}</CardTitle>
+                  <div>
+                    <span className="font-display text-3xl font-semibold">₹{plan.price}</span>
+                    <span className="text-sm text-muted">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted">{formatMaxBooks(plan.maxBooks)}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       </section>

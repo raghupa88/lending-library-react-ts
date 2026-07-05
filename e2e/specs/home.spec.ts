@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { setupBooksApiMock } from '../helpers/api-mocks';
+import { setupBooksApiMock, setupSubscriptionsApiMock } from '../helpers/api-mocks';
 import { expectNoA11yViolations } from '../helpers/axe';
 
 test.beforeEach(async ({ page }) => {
   await setupBooksApiMock(page);
+  await setupSubscriptionsApiMock(page);
 });
 
 test('hero headline renders', async ({ page }) => {
@@ -19,11 +20,10 @@ test('"Browse the shelf" navigates to /books', async ({ page }) => {
   await expect(page).toHaveURL('/books');
 });
 
-test('"View plans" scrolls to the plans section', async ({ page }) => {
+test('"View plans" navigates to the plans page', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('link', { name: /view plans/i }).click();
-  await expect(page).toHaveURL('/#plans');
-  await expect(page.getByRole('heading', { name: /plans for every kind of reader/i })).toBeVisible();
+  await expect(page).toHaveURL('/plans');
 });
 
 test('"New on the shelf" lists books from the API', async ({ page }) => {

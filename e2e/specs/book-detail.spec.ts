@@ -1,7 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { test as authTest, expect as authExpect } from '../fixtures/auth.fixture';
-import { setupAllApiMocks, setupBookDetailApiMock } from '../helpers/api-mocks';
-import { MOCK_BOOK_ITEMS } from '../fixtures/mock-data';
+import {
+  setupAllApiMocks,
+  setupBookDetailApiMock,
+  setupLoansApiMock,
+} from '../helpers/api-mocks';
+import {
+  MOCK_BOOK_ITEMS,
+  MOCK_LOANS_EMPTY,
+  MOCK_BORROW_LIMIT_FAILURE,
+} from '../fixtures/mock-data';
 import { expectNoA11yViolations } from '../helpers/axe';
 
 test.beforeEach(async ({ page }) => {
@@ -44,15 +52,44 @@ test('unknown book shows the not-found state', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Book not found' })).toBeVisible();
 });
 
-authTest('borrow while signed in shows the coming-soon toast', async ({
+authTest('borrow while signed in creates a loan and shows a toast', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupLoansApiMock(page, { list: MOCK_LOANS_EMPTY });
+  await page.goto('/books/book-1');
+  await page.getByRole('button', { name: /borrow this book/i }).click();
+  await authExpect(
+    page
+      .getByRole('region', { name: 'Notifications' })
+      .getByText(/borrowed "the great gatsby"/i),
+  ).toBeVisible();
+});
+
+authTest('loan-limit error surfaces a toast with an upgrade link', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupLoansApiMock(page, {
+    list: MOCK_LOANS_EMPTY,
+    borrow: MOCK_BORROW_LIMIT_FAILURE,
+  });
+  await page.goto('/books/book-1');
+  await page.getByRole('button', { name: /borrow this book/i }).click();
+  const toastRegion = page.getByRole('region', { name: 'Notifications' });
+  await authExpect(toastRegion.getByText(/loan limit reached/i)).toBeVisible();
+  await toastRegion.getByRole('link', { name: /upgrade your plan/i }).click();
+  await authExpect(page).toHaveURL('/plans');
+});
+
+authTest('an already-borrowed book disables the borrow button', async ({
   authenticatedPage: page,
 }) => {
   await setupAllApiMocks(page);
   await page.goto('/books/book-1');
-  await page.getByRole('button', { name: /borrow this book/i }).click();
   await authExpect(
-    page.getByRole('region', { name: 'Notifications' }).getByText(/member release/i),
-  ).toBeVisible();
+    page.getByRole('button', { name: /already on your shelf/i }),
+  ).toBeDisabled();
 });
 
 test('book detail has no WCAG A/AA violations', async ({ page }) => {
