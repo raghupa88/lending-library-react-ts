@@ -4,12 +4,15 @@ import { MemberShell } from "./components/layout/MemberShell";
 import { AdminShell } from "./components/layout/AdminShell";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import BooksAdmin from "./pages/Admin/BooksAdmin";
+import CoursesAdmin from "./pages/Admin/CoursesAdmin";
 import MembersAdmin from "./pages/Admin/MembersAdmin";
 import LoansAdmin from "./pages/Admin/LoansAdmin";
 import { LoadingSpinner } from "./components/ui/loading";
 import Home from "./pages/Home/Home";
 import Books from "./pages/Books/Books";
 import BookDetail from "./pages/BookDetail/BookDetail";
+import Learn from "./pages/Learn/Learn";
+import LearnDetail from "./pages/LearnDetail/LearnDetail";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -65,6 +68,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/books" element={<Books />} />
         <Route path="/books/:id" element={<BookDetail />} />
+        <Route path="/learn" element={<Learn />} />
+        <Route path="/learn/:slug" element={<LearnDetail />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -95,6 +100,7 @@ export default function App() {
       >
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/books" element={<BooksAdmin />} />
+        <Route path="/admin/learn/courses" element={<CoursesAdmin />} />
         <Route path="/admin/members" element={<MembersAdmin />} />
         <Route path="/admin/loans" element={<LoansAdmin />} />
       </Route>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CalendarClock, Library, Settings, History } from "lucide-react";
+import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   useMyLoansQuery,
@@ -13,6 +13,7 @@ import {
   useCurrentSubscriptionQuery,
   formatMaxBooks,
 } from "../../features/subscriptions/queries";
+import { useMyEnrollmentsQuery } from "../../features/learn/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState("reading");
   const { data: loans, isLoading } = useMyLoansQuery(Boolean(user));
   const { data: subscription } = useCurrentSubscriptionQuery(Boolean(user));
+  const { data: enrollments } = useMyEnrollmentsQuery(Boolean(user));
   const returnBook = useReturnBook();
 
   if (!user) return null;
@@ -106,6 +108,7 @@ export default function Dashboard() {
             items={[
               { id: "reading", label: `Currently reading (${activeLoans.length})` },
               { id: "history", label: `History (${pastLoans.length})` },
+              { id: "learning", label: `My learning (${enrollments?.length ?? 0})` },
             ]}
             className="w-fit"
           />
@@ -189,6 +192,42 @@ export default function Dashboard() {
                       <div>Borrowed {formatDate(loan.borrowedAt)}</div>
                       <div>Returned {loan.returnedAt ? formatDate(loan.returnedAt) : "—"}</div>
                     </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </TabPanel>
+
+          <TabPanel id="learning" active={tab === "learning"} className="mt-5">
+            {!enrollments || enrollments.length === 0 ? (
+              <EmptyState
+                icon={<GraduationCap aria-hidden="true" />}
+                title="No courses yet"
+                description="Suvadi Learn has free courses on saving, investing, and the markets."
+                action={
+                  <Link to="/learn" className={cn(buttonVariants({ size: "md" }))}>
+                    Browse courses
+                  </Link>
+                }
+              />
+            ) : (
+              <ul className="divide-y divide-border rounded-(--radius-card) border border-border bg-surface">
+                {enrollments.map((enrollment) => (
+                  <li key={enrollment.id} className="flex items-center gap-4 p-4">
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={`/learn/${enrollment.courseSlug}`}
+                        className="font-medium hover:text-accent"
+                      >
+                        {enrollment.courseTitle}
+                      </Link>
+                      <div className="text-sm text-muted">
+                        Enrolled {formatDate(enrollment.enrolledAt)}
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted capitalize">
+                      {enrollment.status.toLowerCase()}
+                    </span>
                   </li>
                 ))}
               </ul>

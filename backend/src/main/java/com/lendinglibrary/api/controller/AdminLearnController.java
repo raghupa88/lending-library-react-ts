@@ -1,0 +1,82 @@
+package com.lendinglibrary.api.controller;
+
+import com.lendinglibrary.api.dto.*;
+import com.lendinglibrary.api.envelope.ApiResponse;
+import com.lendinglibrary.application.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/admin/learn")
+@PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
+@Tag(name = "Admin - Learn")
+@SecurityRequirement(name = "bearerAuth")
+public class AdminLearnController {
+
+    private final CourseService courseService;
+
+    @GetMapping("/courses")
+    @Operation(summary = "List all courses, any status")
+    public ResponseEntity<ApiResponse<List<CourseSummaryResponse>>> list() {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.listAllForAdmin()));
+    }
+
+    @GetMapping("/courses/{id}")
+    @Operation(summary = "Get a course's full syllabus for editing, any status")
+    public ResponseEntity<ApiResponse<CourseDetailResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.getByIdForAdmin(id)));
+    }
+
+    @PostMapping("/courses")
+    @Operation(summary = "Create a draft course")
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> create(@Valid @RequestBody CourseRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(courseService.create(req), "Course created"));
+    }
+
+    @PutMapping("/courses/{id}")
+    @Operation(summary = "Update a course's fields")
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> update(
+            @PathVariable UUID id, @Valid @RequestBody CourseRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.update(id, req), "Course updated"));
+    }
+
+    @PutMapping("/courses/{id}/publish")
+    @Operation(summary = "Publish a course, making it visible to learners")
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> publish(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.setPublished(id, true), "Course published"));
+    }
+
+    @PutMapping("/courses/{id}/unpublish")
+    @Operation(summary = "Revert a course to draft")
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> unpublish(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.setPublished(id, false), "Course unpublished"));
+    }
+
+    @PostMapping("/courses/{id}/modules")
+    @Operation(summary = "Append a module to a course")
+    public ResponseEntity<ApiResponse<ModuleResponse>> addModule(
+            @PathVariable UUID id, @Valid @RequestBody ModuleRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(courseService.addModule(id, req), "Module added"));
+    }
+
+    @PostMapping("/modules/{moduleId}/lessons")
+    @Operation(summary = "Append a lesson to a module")
+    public ResponseEntity<ApiResponse<LessonResponse>> addLesson(
+            @PathVariable UUID moduleId, @Valid @RequestBody LessonRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(courseService.addLesson(moduleId, req), "Lesson added"));
+    }
+}

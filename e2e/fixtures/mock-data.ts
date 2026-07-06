@@ -344,6 +344,162 @@ export const MOCK_BOOK_CREATED = {
   data: { ...MOCK_BOOK_ITEMS[0], id: 'book-new', title: 'New Book' },
 };
 
+// --- Learn (backend CourseSummaryResponse / CourseDetailResponse / EnrollmentResponse) ---
+
+export const MOCK_COURSE_SUMMARY = {
+  id: 'course-1',
+  slug: 'money-foundations',
+  title: 'Money Foundations',
+  track: 'MONEY_FOUNDATIONS',
+  level: 'BEGINNER',
+  language: 'English',
+  summary: 'The essentials before you invest a single rupee.',
+  price: 0,
+  status: 'PUBLISHED',
+  moduleCount: 2,
+  lessonCount: 3,
+};
+
+export const MOCK_COURSES = {
+  success: true,
+  data: {
+    content: [MOCK_COURSE_SUMMARY],
+    totalPages: 1,
+    totalElements: 1,
+    currentPage: 0,
+    pageSize: 20,
+    hasNext: false,
+    hasPrev: false,
+  },
+};
+
+export const MOCK_COURSES_EMPTY = {
+  success: true,
+  data: {
+    content: [],
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+    pageSize: 20,
+    hasNext: false,
+    hasPrev: false,
+  },
+};
+
+export const MOCK_COURSE_DETAIL = {
+  success: true,
+  data: {
+    ...MOCK_COURSE_SUMMARY,
+    modules: [
+      {
+        id: 'module-1',
+        title: 'Why bother investing?',
+        sortOrder: 0,
+        lessons: [
+          {
+            id: 'lesson-1',
+            title: 'Saving vs. investing',
+            kind: 'ARTICLE',
+            contentUrl: null,
+            body: 'Saving protects money; investing grows it.',
+            estMinutes: 8,
+            sortOrder: 0,
+          },
+          {
+            id: 'lesson-2',
+            title: 'The magic of compounding',
+            kind: 'ARTICLE',
+            contentUrl: null,
+            body: 'Returns earn their own returns over time.',
+            estMinutes: 10,
+            sortOrder: 1,
+          },
+        ],
+      },
+      {
+        id: 'module-2',
+        title: 'Understanding risk',
+        sortOrder: 1,
+        lessons: [
+          {
+            id: 'lesson-3',
+            title: 'What "risk" really means',
+            kind: 'ARTICLE',
+            contentUrl: null,
+            body: 'Risk is uncertainty in returns, not certain loss.',
+            estMinutes: 9,
+            sortOrder: 0,
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export const MOCK_ENROLLMENTS_EMPTY = { success: true, data: [] };
+
+export const MOCK_ENROLLMENT_CREATED = {
+  success: true,
+  data: {
+    id: 'enrollment-1',
+    courseId: 'course-1',
+    courseSlug: 'money-foundations',
+    courseTitle: 'Money Foundations',
+    status: 'ACTIVE',
+    enrolledAt: daysFromNow(0),
+  },
+};
+
+export const MOCK_ENROLLMENTS = {
+  success: true,
+  data: [MOCK_ENROLLMENT_CREATED.data],
+};
+
+export const MOCK_ENROLL_ALREADY_FAILURE = {
+  success: false,
+  error: "You're already enrolled in this course",
+};
+
+export const MOCK_ADMIN_COURSES = {
+  success: true,
+  data: [
+    MOCK_COURSE_SUMMARY,
+    {
+      ...MOCK_COURSE_SUMMARY,
+      id: 'course-2',
+      slug: 'equities-101',
+      title: 'Equities 101',
+      track: 'EQUITIES',
+      status: 'DRAFT',
+      moduleCount: 0,
+      lessonCount: 0,
+    },
+  ],
+};
+
+export const MOCK_COURSE_CREATED = {
+  success: true,
+  data: { ...MOCK_COURSE_SUMMARY, id: 'course-new', slug: 'new-course', title: 'New Course', status: 'DRAFT', moduleCount: 0, lessonCount: 0 },
+};
+
+export const MOCK_MODULE_CREATED = {
+  success: true,
+  data: { id: 'module-new', title: 'New Module', sortOrder: 2, lessons: [] },
+};
+
+export const MOCK_LESSON_CREATED = {
+  success: true,
+  data: {
+    id: 'lesson-new',
+    title: 'New Lesson',
+    kind: 'ARTICLE',
+    contentUrl: null,
+    body: null,
+    estMinutes: 10,
+    sortOrder: 0,
+  },
+};
+
 // --- Notifications (backend NotificationResponse) ---
 
 export const MOCK_NOTIFICATIONS = {

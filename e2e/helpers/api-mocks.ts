@@ -19,6 +19,14 @@ import {
   MOCK_NOTIFICATIONS,
   MOCK_UNREAD_COUNT,
   MOCK_NOTIFICATION_MARKED_READ,
+  MOCK_COURSES,
+  MOCK_COURSE_DETAIL,
+  MOCK_ENROLLMENTS_EMPTY,
+  MOCK_ENROLLMENT_CREATED,
+  MOCK_ADMIN_COURSES,
+  MOCK_COURSE_CREATED,
+  MOCK_MODULE_CREATED,
+  MOCK_LESSON_CREATED,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -135,6 +143,78 @@ export async function setupNotificationsApiMock(
   await page.route(`${API_BASE}/notifications`, (route) => route.fulfill(fulfill(list)));
 }
 
+export async function setupLearnApiMocks(
+  page: Page,
+  {
+    courses = MOCK_COURSES,
+    detail = MOCK_COURSE_DETAIL,
+    enrollments = MOCK_ENROLLMENTS_EMPTY,
+    enroll = MOCK_ENROLLMENT_CREATED,
+  }: { courses?: unknown; detail?: unknown; enrollments?: unknown; enroll?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/learn/courses?*`, (route) => route.fulfill(fulfill(courses)));
+  await page.route(`${API_BASE}/learn/courses`, (route) => route.fulfill(fulfill(courses)));
+  await page.route(`${API_BASE}/learn/courses/*/enroll`, (route) =>
+    route.fulfill(fulfill(enroll)),
+  );
+  await page.route(`${API_BASE}/learn/courses/*`, (route) => route.fulfill(fulfill(detail)));
+  await page.route(`${API_BASE}/learn/me/enrollments`, (route) =>
+    route.fulfill(fulfill(enrollments)),
+  );
+}
+
+export async function setupAdminLearnApiMocks(
+  page: Page,
+  {
+    courses = MOCK_ADMIN_COURSES,
+    detail = MOCK_COURSE_DETAIL,
+    courseSaved = MOCK_COURSE_CREATED,
+    moduleSaved = MOCK_MODULE_CREATED,
+    lessonSaved = MOCK_LESSON_CREATED,
+  }: {
+    courses?: unknown;
+    detail?: unknown;
+    courseSaved?: unknown;
+    moduleSaved?: unknown;
+    lessonSaved?: unknown;
+  } = {},
+) {
+  // Mutable so appended modules/lessons show up on the detail refetch that
+  // follows each mutation, mirroring the real (append-only) backend.
+  const detailState = JSON.parse(JSON.stringify(detail)) as {
+    data: { modules: { id: string; lessons: unknown[] }[] };
+  };
+
+  await page.route(`${API_BASE}/admin/learn/courses`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'POST' ? courseSaved : courses)),
+  );
+  await page.route(`${API_BASE}/admin/learn/courses/*/modules`, (route) => {
+    const newModule = {
+      ...(moduleSaved as { data: { id: string } }).data,
+      lessons: [] as unknown[],
+    };
+    detailState.data.modules.push(newModule);
+    route.fulfill(fulfill({ success: true, data: newModule }));
+  });
+  await page.route(`${API_BASE}/admin/learn/modules/*/lessons`, (route) => {
+    const moduleId = route.request().url().split('/modules/')[1]?.split('/lessons')[0];
+    const targetModule =
+      detailState.data.modules.find((m) => m.id === moduleId) ?? detailState.data.modules[0];
+    const newLesson = (lessonSaved as { data: unknown }).data;
+    targetModule.lessons.push(newLesson);
+    route.fulfill(fulfill({ success: true, data: newLesson }));
+  });
+  await page.route(`${API_BASE}/admin/learn/courses/*/publish`, (route) =>
+    route.fulfill(fulfill(courseSaved)),
+  );
+  await page.route(`${API_BASE}/admin/learn/courses/*/unpublish`, (route) =>
+    route.fulfill(fulfill(courseSaved)),
+  );
+  await page.route(`${API_BASE}/admin/learn/courses/*`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'GET' ? detailState : courseSaved)),
+  );
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -145,4 +225,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupSubscriptionsApiMock(page);
   await setupProfileApiMock(page);
   await setupNotificationsApiMock(page);
+  await setupLearnApiMocks(page);
 }
