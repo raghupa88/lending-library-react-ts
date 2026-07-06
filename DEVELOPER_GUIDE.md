@@ -56,12 +56,28 @@ cp .env.example .env
 
 ## 2. Start the Backend
 
+The backend requires `JWT_SECRET` (32+ characters) — there is no baked-in
+default; the app fails fast at startup without it (12-factor config).
+
 ```bash
 cd backend
-mvn spring-boot:run
+JWT_SECRET="local-dev-secret-key-32-chars-minimum!!" mvn spring-boot:run
 ```
 
+Flyway applies the schema + seed migrations (`src/main/resources/db/migration`)
+to an in-memory H2 database in PostgreSQL mode; Hibernate runs in `validate`
+mode, so entity↔schema drift fails the boot immediately.
+
 First run downloads dependencies (~200 MB). Subsequent runs are fast.
+
+### Or run the whole stack with Docker Compose
+
+```bash
+cp .env.example .env       # set JWT_SECRET and DB_PASSWORD
+docker compose up --build  # postgres + backend + frontend (:3000) + mailpit (:8025)
+```
+
+With compose, data lives in real PostgreSQL and survives restarts.
 
 You should see:
 ```
@@ -326,17 +342,18 @@ if (limit > 0 && active >= limit) {
 
 | File | Purpose |
 |------|---------|
-| `application.yml` | Dev defaults (H2, logging, JWT secret placeholder) |
-| `application-prod.yml` | Prod overrides (PostgreSQL from env vars) |
+| `application.yml` | Profiles: default `dev` (H2 + Flyway) and `postgres` (datasource from env) |
+| `db/migration/` | Flyway migrations — the single source of schema truth |
+| `logback-spring.xml` | Console logs in dev; JSON lines under the `docker` profile |
 
-**Key env vars for production:**
+**Key env vars (postgres profile / deployments):**
 
 ```bash
-SPRING_PROFILES_ACTIVE=prod
-DATABASE_URL=jdbc:postgresql://host:5432/lendingdb
-DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=secret
-JWT_SECRET=your-256-bit-secret-key-here
+SPRING_PROFILES_ACTIVE=postgres,docker
+DB_URL=jdbc:postgresql://host:5432/lendinglibrary
+DB_USER=lending
+DB_PASSWORD=secret
+JWT_SECRET=your-256-bit-secret-key-here   # required in every profile
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
@@ -399,9 +416,9 @@ mvn clean install
 ```bash
 # Stop both servers (Ctrl+C in each terminal)
 
-# Backend — wipes H2 data (it's in-memory, nothing to delete)
+# Backend — wipes H2 data (it's in-memory; compose/Postgres data persists)
 cd backend
-mvn spring-boot:run     # seed data re-runs automatically
+JWT_SECRET="local-dev-secret-key-32-chars-minimum!!" mvn spring-boot:run  # migrations re-run automatically
 
 # Frontend
 cd ..
