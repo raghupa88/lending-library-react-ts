@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, BookMarked, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, BookMarked, GraduationCap, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Avatar } from "../ui/avatar";
 import { cn } from "../../lib/cn";
@@ -7,6 +7,7 @@ import { cn } from "../../lib/cn";
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/books", label: "Books", icon: BookOpen, end: false },
+  { to: "/admin/learn/courses", label: "Courses", icon: GraduationCap, end: false },
   { to: "/admin/members", label: "Members", icon: Users, end: false },
   { to: "/admin/loans", label: "Loans", icon: BookMarked, end: false },
 ];

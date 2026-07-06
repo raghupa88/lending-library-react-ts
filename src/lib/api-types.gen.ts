@@ -56,6 +56,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/courses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a course's full syllabus for editing, any status */
+        get: operations["getById_2"];
+        /** Update a course's fields */
+        put: operations["update_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Revert a course to draft */
+        put: operations["unpublish"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish a course, making it visible to learners */
+        put: operations["publish"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/books/{id}": {
         parameters: {
             query?: never;
@@ -65,7 +117,7 @@ export interface paths {
         };
         get?: never;
         /** Update a book */
-        put: operations["update_1"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -120,6 +172,23 @@ export interface paths {
         put?: never;
         /** Borrow a book */
         post: operations["borrow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/courses/{id}/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enroll in a free course */
+        post: operations["enroll"];
         delete?: never;
         options?: never;
         head?: never;
@@ -194,6 +263,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/modules/{moduleId}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append a lesson to a module */
+        post: operations["addLesson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all courses, any status */
+        get: operations["list_5"];
+        put?: never;
+        /** Create a draft course */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses/{id}/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append a module to a course */
+        post: operations["addModule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/books": {
         parameters: {
             query?: never;
@@ -204,7 +325,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Create a new book */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -279,6 +400,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/me/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's course enrollments */
+        get: operations["myEnrollments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse published courses with optional filters */
+        get: operations["list_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/courses/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a published course's full syllabus by slug */
+        get: operations["getBySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/books": {
         parameters: {
             query?: never;
@@ -287,7 +459,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all books with optional filters */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -321,7 +493,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all members with plan and active-loan counts */
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -338,7 +510,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all loans, optionally filtered by status (active/overdue/returned) */
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -409,6 +581,39 @@ export interface components {
             /** Format: date-time */
             returnedAt?: string;
             status?: string;
+        };
+        CourseRequest: {
+            slug: string;
+            title: string;
+            /** @enum {string} */
+            track: "MONEY_FOUNDATIONS" | "EQUITIES" | "BONDS_FIXED_INCOME" | "DERIVATIVES" | "PORTFOLIO_RISK";
+            /** @enum {string} */
+            level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+            language: string;
+            summary?: string;
+            price: number;
+        };
+        ApiResponseCourseSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CourseSummaryResponse"];
+            message?: string;
+            error?: string;
+        };
+        CourseSummaryResponse: {
+            /** Format: uuid */
+            id?: string;
+            slug?: string;
+            title?: string;
+            track?: string;
+            level?: string;
+            language?: string;
+            summary?: string;
+            price?: number;
+            status?: string;
+            /** Format: int32 */
+            moduleCount?: number;
+            /** Format: int64 */
+            lessonCount?: number;
         };
         BookRequest: {
             title: string;
@@ -508,6 +713,23 @@ export interface components {
             /** Format: int32 */
             daysToKeep?: number;
         };
+        ApiResponseEnrollmentResponse: {
+            success?: boolean;
+            data?: components["schemas"]["EnrollmentResponse"];
+            message?: string;
+            error?: string;
+        };
+        EnrollmentResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            courseId?: string;
+            courseSlug?: string;
+            courseTitle?: string;
+            status?: string;
+            /** Format: date-time */
+            enrolledAt?: string;
+        };
         RegisterRequest: {
             email: string;
             password: string;
@@ -544,6 +766,50 @@ export interface components {
         LoginRequest: {
             email: string;
             password: string;
+        };
+        LessonRequest: {
+            title: string;
+            /** @enum {string} */
+            kind: "VIDEO" | "ARTICLE" | "PDF" | "SLIDES";
+            contentUrl?: string;
+            body?: string;
+            /** Format: int32 */
+            estMinutes?: number;
+        };
+        ApiResponseLessonResponse: {
+            success?: boolean;
+            data?: components["schemas"]["LessonResponse"];
+            message?: string;
+            error?: string;
+        };
+        LessonResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            kind?: string;
+            contentUrl?: string;
+            body?: string;
+            /** Format: int32 */
+            estMinutes?: number;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        ModuleRequest: {
+            title: string;
+        };
+        ApiResponseModuleResponse: {
+            success?: boolean;
+            data?: components["schemas"]["ModuleResponse"];
+            message?: string;
+            error?: string;
+        };
+        ModuleResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+            lessons?: components["schemas"]["LessonResponse"][];
         };
         ApiResponseListSubscriptionPlanResponse: {
             success?: boolean;
@@ -585,6 +851,50 @@ export interface components {
             data?: components["schemas"]["LoanResponse"][];
             message?: string;
             error?: string;
+        };
+        ApiResponseListEnrollmentResponse: {
+            success?: boolean;
+            data?: components["schemas"]["EnrollmentResponse"][];
+            message?: string;
+            error?: string;
+        };
+        ApiResponsePagedResponseCourseSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["PagedResponseCourseSummaryResponse"];
+            message?: string;
+            error?: string;
+        };
+        PagedResponseCourseSummaryResponse: {
+            content?: components["schemas"]["CourseSummaryResponse"][];
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            currentPage?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            hasNext?: boolean;
+            hasPrev?: boolean;
+        };
+        ApiResponseCourseDetailResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CourseDetailResponse"];
+            message?: string;
+            error?: string;
+        };
+        CourseDetailResponse: {
+            /** Format: uuid */
+            id?: string;
+            slug?: string;
+            title?: string;
+            track?: string;
+            level?: string;
+            language?: string;
+            summary?: string;
+            price?: number;
+            status?: string;
+            modules?: components["schemas"]["ModuleResponse"][];
         };
         ApiResponsePagedResponseBookResponse: {
             success?: boolean;
@@ -643,6 +953,12 @@ export interface components {
         ApiResponseListAdminLoanResponse: {
             success?: boolean;
             data?: components["schemas"]["AdminLoanResponse"][];
+            message?: string;
+            error?: string;
+        };
+        ApiResponseListCourseSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CourseSummaryResponse"][];
             message?: string;
             error?: string;
         };
@@ -747,7 +1063,99 @@ export interface operations {
             };
         };
     };
+    getById_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseDetailResponse"];
+                };
+            };
+        };
+    };
     update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    unpublish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -885,6 +1293,28 @@ export interface operations {
             };
         };
     };
+    enroll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseEnrollmentResponse"];
+                };
+            };
+        };
+    };
     register: {
         parameters: {
             query?: never;
@@ -991,7 +1421,103 @@ export interface operations {
             };
         };
     };
+    addLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                moduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LessonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseLessonResponse"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCourseSummaryResponse"];
+                };
+            };
+        };
+    };
     create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    addModule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseModuleResponse"];
+                };
+            };
+        };
+    };
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1095,7 +1621,75 @@ export interface operations {
             };
         };
     };
+    myEnrollments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEnrollmentResponse"];
+                };
+            };
+        };
+    };
     list_1: {
+        parameters: {
+            query?: {
+                track?: "MONEY_FOUNDATIONS" | "EQUITIES" | "BONDS_FIXED_INCOME" | "DERIVATIVES" | "PORTFOLIO_RISK";
+                level?: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+                language?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePagedResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    getBySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseDetailResponse"];
+                };
+            };
+        };
+    };
+    list_2: {
         parameters: {
             query?: {
                 search?: string;
@@ -1145,7 +1739,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1165,7 +1759,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 status?: string;

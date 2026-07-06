@@ -4,6 +4,7 @@ import {
   setupAllApiMocks,
   setupBooksApiMock,
   setupAdminApiMocks,
+  setupAdminLearnApiMocks,
 } from '../helpers/api-mocks';
 import { MOCK_ADMIN_LOANS_OVERDUE } from '../fixtures/mock-data';
 import { expectNoA11yViolations } from '../helpers/axe';
@@ -88,6 +89,71 @@ authTest('edit dialog is prefilled from the row', async ({ adminPage: page }) =>
   await authExpect(page.getByRole('dialog').getByLabel('Title')).toHaveValue('The Great Gatsby');
 });
 
+authTest('courses admin lists courses and opens the add-course dialog', async ({
+  adminPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupAdminLearnApiMocks(page);
+  await page.goto('/admin/learn/courses');
+  await authExpect(
+    page.getByRole('cell', { name: 'Money Foundations', exact: true }).first(),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add course' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add a course' });
+  await authExpect(dialog.getByLabel('Title')).toBeVisible();
+
+  const posts: string[] = [];
+  page.on('request', (req) => {
+    if (req.url().includes('/admin/learn/courses') && req.method() === 'POST')
+      posts.push(req.postData() ?? '');
+  });
+
+  await dialog.getByLabel('Title').fill('New Course');
+  await dialog.getByLabel('Slug').fill('new-course');
+  await dialog.getByLabel('Summary').fill('A brand new course.');
+  await dialog.getByRole('button', { name: 'Add course' }).click();
+
+  await authExpect(
+    page.getByRole('region', { name: 'Notifications' }).getByText(/added "new course"/i),
+  ).toBeVisible();
+  expect(posts.length).toBeGreaterThan(0);
+  expect(posts[0]).toContain('"title":"New Course"');
+});
+
+authTest('publish toggles a draft course to published', async ({ adminPage: page }) => {
+  await setupAllApiMocks(page);
+  await setupAdminLearnApiMocks(page);
+  await page.goto('/admin/learn/courses');
+  const row = page.getByRole('row', { name: /equities 101/i });
+  await row.getByRole('button', { name: /^publish equities 101$/i }).click();
+  await authExpect(
+    page.getByRole('region', { name: 'Notifications' }).getByText(/published/i),
+  ).toBeVisible();
+});
+
+authTest('syllabus dialog adds a module and a lesson', async ({ adminPage: page }) => {
+  await setupAllApiMocks(page);
+  await setupAdminLearnApiMocks(page);
+  await page.goto('/admin/learn/courses');
+  await page
+    .getByRole('row', { name: /money foundations/i })
+    .getByRole('button', { name: /manage syllabus/i })
+    .click();
+
+  const dialog = page.getByRole('dialog', { name: /syllabus/i });
+  await authExpect(dialog.getByText('Why bother investing?')).toBeVisible();
+
+  await dialog.getByLabel('New module title').fill('Reading a balance sheet');
+  await dialog.getByRole('button', { name: 'Add module' }).click();
+  await authExpect(dialog.getByText('New Module')).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Add lesson' }).first().click();
+  await dialog.getByLabel('Lesson title').fill('Intro to balance sheets');
+  await dialog.locator('button[type="submit"]').filter({ hasText: 'Add lesson' }).click();
+  await authExpect(dialog.getByText('New Lesson')).toBeVisible();
+});
+
 authTest('members admin lists users with plan and loan counts', async ({ adminPage: page }) => {
   await setupAllApiMocks(page);
   await setupAdminApiMocks(page);
@@ -115,7 +181,8 @@ authTest('loans admin filters by overdue and highlights rows', async ({ adminPag
 authTest('admin pages have no WCAG A/AA violations', async ({ adminPage: page }) => {
   await setupAllApiMocks(page);
   await setupAdminApiMocks(page);
-  for (const path of ['/admin', '/admin/books', '/admin/members', '/admin/loans']) {
+  await setupAdminLearnApiMocks(page);
+  for (const path of ['/admin', '/admin/books', '/admin/learn/courses', '/admin/members', '/admin/loans']) {
     await page.goto(path);
     await authExpect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expectNoA11yViolations(page);
