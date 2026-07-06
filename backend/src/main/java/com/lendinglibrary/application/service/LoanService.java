@@ -8,6 +8,8 @@ import com.lendinglibrary.domain.enums.LoanStatus;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
+import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
+import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.LoanRepository;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -26,6 +29,7 @@ public class LoanService {
     private final BookService bookService;
     private final UserService userService;
     private final SubscriptionRepository subscriptionRepository;
+    private final DomainEventPublisher events;
 
     public List<LoanResponse> getUserLoans(String email) {
         User user = userService.findByEmail(email);
@@ -59,8 +63,17 @@ public class LoanService {
                 .dueDate(LocalDateTime.now().plusDays(req.daysToKeep()))
                 .status(LoanStatus.ACTIVE)
                 .build();
+        loan = loanRepository.save(loan);
 
-        return LoanResponse.from(loanRepository.save(loan));
+        events.publish(Topics.LOAN_EVENTS, "loan.created", loan.getId().toString(), Map.of(
+                "userId", user.getId().toString(),
+                "userEmail", user.getEmail(),
+                "bookId", book.getId().toString(),
+                "bookTitle", book.getTitle(),
+                "dueDate", loan.getDueDate().toString()
+        ));
+
+        return LoanResponse.from(loan);
     }
 
     @Transactional
@@ -78,7 +91,15 @@ public class LoanService {
         loan.setStatus(LoanStatus.RETURNED);
         loan.setReturnedAt(LocalDateTime.now());
         loan.getBook().setAvailableCopies(loan.getBook().getAvailableCopies() + 1);
+        loan = loanRepository.save(loan);
 
-        return LoanResponse.from(loanRepository.save(loan));
+        events.publish(Topics.LOAN_EVENTS, "loan.returned", loan.getId().toString(), Map.of(
+                "userId", loan.getUser().getId().toString(),
+                "userEmail", loan.getUser().getEmail(),
+                "bookId", loan.getBook().getId().toString(),
+                "bookTitle", loan.getBook().getTitle()
+        ));
+
+        return LoanResponse.from(loan);
     }
 }

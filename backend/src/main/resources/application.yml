@@ -27,6 +27,11 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  mail:
+    # Only touched by the (kafka-profile-only) NotificationConsumer; the
+    # default host is Mailpit's SMTP port from docker-compose.
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
 
 server:
   port: 8080
@@ -46,6 +51,12 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    # Mail is a best-effort side channel for notifications (see
+    # NotificationConsumer) — an SMTP hiccup must not flip readiness/
+    # liveness to DOWN and get the pod killed over a non-critical dependency.
+    mail:
+      enabled: false
 
 jwt:
   # 12-factor: no baked-in secret. The app fails fast at startup when
@@ -56,6 +67,9 @@ jwt:
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+outbox:
+  poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:2000}
 
 logging:
   level:
@@ -80,3 +94,25 @@ spring:
 logging:
   level:
     com.lendinglibrary: INFO
+
+---
+# Kafka profile: activates the OutboxPublisher and NotificationConsumer
+# beans (both @Profile("kafka")) and configures the broker connection.
+# Without this profile active, spring-kafka/spring-mail sit on the
+# classpath unused — no connection is attempted at startup either way,
+# since Kafka/mail clients connect lazily on first send.
+spring:
+  config:
+    activate:
+      on-profile: kafka
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    consumer:
+      group-id: notifications
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

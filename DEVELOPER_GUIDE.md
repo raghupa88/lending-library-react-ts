@@ -74,10 +74,30 @@ First run downloads dependencies (~200 MB). Subsequent runs are fast.
 
 ```bash
 cp .env.example .env       # set JWT_SECRET and DB_PASSWORD
-docker compose up --build  # postgres + backend + frontend (:3000) + mailpit (:8025)
+docker compose up --build  # postgres, zookeeper+kafka, kafka-ui (:8081),
+                            # backend (:8080), frontend (:3000), mailpit (:8025)
 ```
 
-With compose, data lives in real PostgreSQL and survives restarts.
+With compose, data lives in real PostgreSQL and survives restarts. The
+backend also runs with the `kafka` Spring profile active, so borrowing a
+book, returning it, or changing your subscription publishes a domain event
+(see `docs/events.md`) that `NotificationConsumer` turns into a bell
+notification in the UI and an email you can see at Mailpit
+(http://localhost:8025). Watch the events flow through Kafka itself at
+http://localhost:8081 (kafka-ui).
+
+To compare Kafka's KRaft mode (no Zookeeper) against the default
+Zookeeper-mode broker above, run it standalone — both bind `:9092`, so
+don't run them at the same time:
+
+```bash
+docker compose --profile kraft up kafka-kraft
+```
+
+Running the backend with `mvn spring-boot:run` (no compose) skips Kafka
+entirely — `OutboxPublisher`/`NotificationConsumer` are `@Profile("kafka")`
+only, so events accumulate harmlessly in the `outbox_events` table and the
+bell just stays empty. That's expected for plain local dev.
 
 You should see:
 ```

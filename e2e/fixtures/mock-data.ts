@@ -343,3 +343,35 @@ export const MOCK_BOOK_CREATED = {
   success: true,
   data: { ...MOCK_BOOK_ITEMS[0], id: 'book-new', title: 'New Book' },
 };
+
+// --- Notifications (backend NotificationResponse) ---
+
+export const MOCK_NOTIFICATIONS = {
+  success: true,
+  data: [
+    {
+      id: 'notif-1',
+      type: 'loan.created',
+      title: 'You borrowed "The Great Gatsby"',
+      body: 'Due back on 2026-07-20. Happy reading!',
+      read: false,
+      createdAt: daysFromNow(0),
+    },
+    {
+      id: 'notif-2',
+      type: 'subscription.changed',
+      title: "You're now on the PREMIUM plan",
+      body: 'Your subscription change is active immediately.',
+      read: true,
+      createdAt: daysFromNow(-2),
+    },
+  ],
+};
+
+export const MOCK_NOTIFICATIONS_EMPTY = { success: true, data: [] };
+export const MOCK_UNREAD_COUNT = { success: true, data: { count: 1 } };
+export const MOCK_UNREAD_COUNT_ZERO = { success: true, data: { count: 0 } };
+export const MOCK_NOTIFICATION_MARKED_READ = {
+  success: true,
+  data: { ...MOCK_NOTIFICATIONS.data[0], read: true },
+};
