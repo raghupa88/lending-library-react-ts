@@ -1,6 +1,13 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { User, LoginCredentials, RegisterData } from "../types";
-import { apiFetch, tokenStore } from "../lib/api";
+import { apiFetch, refreshAuth, tokenStore, type AuthPayload } from "../lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -21,18 +28,7 @@ export const useAuth = () => {
   return context;
 };
 
-/** Matches backend AuthResponse (backend/.../api/dto/AuthResponse.java). */
-interface AuthApiResponse {
-  userId: string;
-  email: string;
-  name: string;
-  role: string;
-  plan: string;
-  accessToken: string;
-  refreshToken: string;
-}
-
-function mapAuthResponseToUser(data: AuthApiResponse): User {
+function mapAuthResponseToUser(data: AuthPayload): User {
   return {
     id: data.userId,
     name: data.name,
@@ -45,29 +41,52 @@ function mapAuthResponseToUser(data: AuthApiResponse): User {
   };
 }
 
-function restoreSession(): User | null {
-  const storedUser = localStorage.getItem("user");
-  if (!storedUser || !tokenStore.getAccess()) return null;
+/** Cached identity for instant paint; the silent refresh confirms or clears it. */
+function cachedUser(): User | null {
+  const stored = localStorage.getItem("user");
+  if (!stored) return null;
   try {
-    return JSON.parse(storedUser) as User;
+    return JSON.parse(stored) as User;
   } catch {
-    tokenStore.clear();
+    localStorage.removeItem("user");
     return null;
   }
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(restoreSession);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(cachedUser);
+  const [isLoading, setIsLoading] = useState(() => cachedUser() !== null);
+  const booted = useRef(false);
+
+  // Boot: the access token lives in memory only, so rotate the httpOnly
+  // refresh cookie into a fresh session. No cookie -> logged out.
+  useEffect(() => {
+    if (booted.current) return;
+    booted.current = true;
+    if (!localStorage.getItem("user")) return;
+
+    refreshAuth()
+      .then((payload) => {
+        if (payload) {
+          const nextUser = mapAuthResponseToUser(payload);
+          setUser(nextUser);
+          localStorage.setItem("user", JSON.stringify(nextUser));
+        } else {
+          setUser(null);
+          tokenStore.clear();
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const authenticate = async (path: string, body: unknown): Promise<void> => {
     setIsLoading(true);
     try {
-      const data = await apiFetch<AuthApiResponse>(path, {
+      const data = await apiFetch<AuthPayload>(path, {
         method: "POST",
         body: JSON.stringify(body),
       });
-      tokenStore.set(data.accessToken, data.refreshToken);
+      tokenStore.setAccess(data.accessToken);
       const nextUser = mapAuthResponseToUser(data);
       setUser(nextUser);
       localStorage.setItem("user", JSON.stringify(nextUser));
@@ -91,10 +110,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    // Best-effort server-side logout; ignore errors
-    if (tokenStore.getAccess()) {
-      apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
-    }
+    // Revokes the refresh-token family server-side and clears the cookie
+    apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
     setUser(null);
     tokenStore.clear();
   };

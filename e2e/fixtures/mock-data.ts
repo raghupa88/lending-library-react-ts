@@ -1,4 +1,5 @@
-// Raw API auth response shape — mirrors backend AuthResponse.java (userId, not id)
+// Raw API auth response shape — mirrors backend AuthResponse.java (userId, not
+// id). Web clients get refreshToken: null — it travels in the httpOnly cookie.
 export const MOCK_USER = {
   userId: 'user-1',
   email: 'member@example.com',
@@ -6,8 +7,21 @@ export const MOCK_USER = {
   role: 'member',
   plan: 'basic',
   accessToken: 'test-access-token-123',
-  refreshToken: 'test-refresh-token-123',
+  refreshToken: null,
 };
+
+export const MOCK_ADMIN_AUTH = {
+  ...MOCK_USER,
+  userId: 'admin-1',
+  email: 'admin@example.com',
+  name: 'Admin User',
+  role: 'admin',
+};
+
+// Silent-refresh responses (POST /auth/refresh) used to restore sessions
+export const MOCK_REFRESH_SUCCESS = { success: true, data: MOCK_USER };
+export const MOCK_REFRESH_ADMIN_SUCCESS = { success: true, data: MOCK_ADMIN_AUTH };
+export const MOCK_REFRESH_FAILURE = { success: false, error: 'Invalid refresh token' };
 
 // Mapped user shape stored in localStorage under "user" key
 // This mirrors what AuthContext.mapAuthResponseToUser() + login() writes

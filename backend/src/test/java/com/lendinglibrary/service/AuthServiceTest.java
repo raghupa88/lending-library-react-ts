@@ -3,6 +3,8 @@ package com.lendinglibrary.service;
 import com.lendinglibrary.api.dto.LoginRequest;
 import com.lendinglibrary.api.dto.RegisterRequest;
 import com.lendinglibrary.application.service.AuthService;
+import com.lendinglibrary.application.service.RefreshTokenService;
+import com.lendinglibrary.domain.entity.RefreshToken;
 import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.Role;
@@ -38,6 +40,7 @@ class AuthServiceTest {
     @Mock SubscriptionRepository subscriptionRepository;
     @Mock JwtProvider jwtProvider;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock RefreshTokenService refreshTokenService;
     @InjectMocks AuthService authService;
 
     private User testUser;
@@ -64,7 +67,9 @@ class AuthServiceTest {
         when(userRepository.save(any())).thenReturn(testUser);
         when(subscriptionRepository.save(any())).thenReturn(testSubscription);
         when(jwtProvider.generateAccessToken(any(), any())).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken(any())).thenReturn("refresh-token");
+        when(refreshTokenService.issueFamily(any()))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token",
+                        RefreshToken.builder().user(testUser).build()));
 
         var result = authService.register(req);
 
@@ -91,7 +96,9 @@ class AuthServiceTest {
         when(subscriptionRepository.findByUserAndStatus(testUser, SubscriptionStatus.ACTIVE))
                 .thenReturn(Optional.of(testSubscription));
         when(jwtProvider.generateAccessToken(any(), any())).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken(any())).thenReturn("refresh-token");
+        when(refreshTokenService.issueFamily(any()))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token",
+                        RefreshToken.builder().user(testUser).build()));
 
         var result = authService.login(req);
 

@@ -135,7 +135,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh access token */
+        /** Rotate the refresh token and mint a new access token */
         post: operations["refresh"];
         delete?: never;
         options?: never;
@@ -152,7 +152,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Logout (client should discard tokens) */
+        /** Logout: revoke the refresh-token family and clear the cookie */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -169,7 +169,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login and get JWT tokens */
+        /** Login and get tokens */
         post: operations["login"];
         delete?: never;
         options?: never;
@@ -254,6 +254,40 @@ export interface paths {
         };
         /** Get a book by ID */
         get: operations["getById_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all members with plan and active-loan counts */
+        get: operations["list_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all loans, optionally filtered by status (active/overdue/returned) */
+        get: operations["list_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -432,7 +466,7 @@ export interface components {
             refreshToken?: string;
         };
         RefreshRequest: {
-            refreshToken: string;
+            refreshToken?: string;
         };
         ApiResponseVoid: {
             success?: boolean;
@@ -489,6 +523,47 @@ export interface components {
             pageSize?: number;
             hasNext?: boolean;
             hasPrev?: boolean;
+        };
+        AdminUserResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            email?: string;
+            role?: string;
+            active?: boolean;
+            plan?: string;
+            /** Format: int64 */
+            activeLoans?: number;
+            /** Format: date-time */
+            joinedAt?: string;
+        };
+        ApiResponseListAdminUserResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminUserResponse"][];
+            message?: string;
+            error?: string;
+        };
+        AdminLoanResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            bookId?: string;
+            bookTitle?: string;
+            memberName?: string;
+            memberEmail?: string;
+            /** Format: date-time */
+            borrowedAt?: string;
+            /** Format: date-time */
+            dueDate?: string;
+            /** Format: date-time */
+            returnedAt?: string;
+            status?: string;
+        };
+        ApiResponseListAdminLoanResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminLoanResponse"][];
+            message?: string;
+            error?: string;
         };
     };
     responses: never;
@@ -710,7 +785,9 @@ export interface operations {
     register: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Client-Type"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -734,11 +811,15 @@ export interface operations {
     refresh: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Client-Type"?: string;
+            };
             path?: never;
-            cookie?: never;
+            cookie?: {
+                refresh_token?: string;
+            };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["RefreshRequest"];
             };
@@ -760,9 +841,15 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                refresh_token?: string;
+            };
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -778,7 +865,9 @@ export interface operations {
     login: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Client-Type"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -909,6 +998,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookResponse"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminUserResponse"];
+                };
+            };
+        };
+    };
+    list_2: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminLoanResponse"];
                 };
             };
         };

@@ -27,6 +27,7 @@ public class AuthService {
     private final SubscriptionRepository subscriptionRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -59,6 +60,7 @@ public class AuthService {
         return buildAuthResponse(user, sub.getPlan());
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
@@ -75,25 +77,37 @@ public class AuthService {
         return buildAuthResponse(user, plan);
     }
 
-    public AuthResponse refresh(RefreshRequest req) {
-        if (!jwtProvider.isValid(req.refreshToken())) {
-            throw new UnauthorizedException("Invalid or expired refresh token");
+    /** Rotate the presented refresh token and mint a fresh access token. */
+    @Transactional
+    public AuthResponse refresh(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new UnauthorizedException("Missing refresh token");
         }
-        String email = jwtProvider.extractEmail(req.refreshToken());
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
+        RefreshTokenService.IssuedToken rotated = refreshTokenService.rotate(rawRefreshToken);
+        User user = rotated.record().getUser();
 
         SubscriptionPlan plan = subscriptionRepository
                 .findByUserAndStatus(user, SubscriptionStatus.ACTIVE)
                 .map(Subscription::getPlan)
                 .orElse(SubscriptionPlan.BASIC);
 
-        return buildAuthResponse(user, plan);
+        return buildAuthResponse(user, plan, rotated.rawToken());
+    }
+
+    /** Server-side logout: revoke the presented token's whole family. */
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken != null && !rawRefreshToken.isBlank()) {
+            refreshTokenService.revoke(rawRefreshToken);
+        }
     }
 
     private AuthResponse buildAuthResponse(User user, SubscriptionPlan plan) {
+        return buildAuthResponse(user, plan, refreshTokenService.issueFamily(user).rawToken());
+    }
+
+    private AuthResponse buildAuthResponse(User user, SubscriptionPlan plan, String refreshToken) {
         String access = jwtProvider.generateAccessToken(user.getEmail(), user.getRole().name());
-        String refresh = jwtProvider.generateRefreshToken(user.getEmail());
         return new AuthResponse(
                 user.getId(),
                 user.getEmail(),
@@ -101,7 +115,7 @@ public class AuthService {
                 user.getRole().name().toLowerCase(),
                 plan.name().toLowerCase(),
                 access,
-                refresh
+                refreshToken
         );
     }
 }
