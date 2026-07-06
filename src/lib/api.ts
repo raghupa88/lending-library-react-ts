@@ -19,38 +19,84 @@ export class ApiError extends Error {
 }
 
 /**
- * Single place tokens live. Currently backed by localStorage; will move to
- * in-memory access token + httpOnly cookie refresh when the backend supports
- * cookie rotation, so no other module may touch storage directly.
+ * The access token lives only in memory (XSS can't lift it from storage);
+ * the refresh token lives only in an httpOnly cookie the backend rotates.
+ * Sessions survive reloads via silent refresh on boot (see AuthContext).
  */
+let accessToken: string | null = null;
+
 export const tokenStore = {
-  getAccess: (): string | null => localStorage.getItem("access_token"),
-  getRefresh: (): string | null => localStorage.getItem("refresh_token"),
-  set(access: string, refresh: string): void {
-    localStorage.setItem("access_token", access);
-    localStorage.setItem("refresh_token", refresh);
+  getAccess: (): string | null => accessToken,
+  setAccess(token: string | null): void {
+    accessToken = token;
   },
   clear(): void {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    accessToken = null;
     localStorage.removeItem("user");
   },
 };
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = tokenStore.getAccess();
+/** Matches backend AuthResponse (refreshToken is null for web clients). */
+export interface AuthPayload {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+  plan: string;
+  accessToken: string;
+  refreshToken: string | null;
+}
+
+let refreshInFlight: Promise<AuthPayload | null> | null = null;
+
+/**
+ * Rotate the refresh cookie into a fresh access token. Single-flight: many
+ * concurrent 401s share one refresh call. Resolves null when there is no
+ * valid session.
+ */
+export function refreshAuth(): Promise<AuthPayload | null> {
+  refreshInFlight ??= (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = (await res.json()) as ApiEnvelope<AuthPayload>;
+      if (!res.ok || !json.success || !json.data) return null;
+      tokenStore.setAccess(json.data.accessToken);
+      return json.data;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+async function rawFetch(path: string, options: RequestInit): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  const token = tokenStore.getAccess();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+  return fetch(`${BASE_URL}${path}`, { ...options, headers, credentials: "include" });
+}
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  let res = await rawFetch(path, options);
 
-  if (res.status === 401) {
-    tokenStore.clear();
+  // Expired access token: silently rotate the refresh cookie and retry once.
+  if (res.status === 401 && !path.startsWith("/auth/")) {
+    const refreshed = await refreshAuth();
+    if (refreshed) {
+      res = await rawFetch(path, options);
+    } else {
+      tokenStore.clear();
+    }
   }
 
   let json: ApiEnvelope<T> | undefined;
