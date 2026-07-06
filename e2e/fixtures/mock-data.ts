@@ -263,3 +263,69 @@ export const MOCK_PROFILE_UPDATED = {
   success: true,
   data: { ...MOCK_PROFILE.data, name: 'Test Reader', phone: '+91 90000 00000' },
 };
+
+// --- Admin (backend AdminUserResponse / AdminLoanResponse) ---
+
+export const MOCK_ADMIN_USERS = {
+  success: true,
+  data: [
+    {
+      id: 'user-1',
+      name: 'Test Member',
+      email: 'member@example.com',
+      role: 'member',
+      active: true,
+      plan: 'basic',
+      activeLoans: 2,
+      joinedAt: daysFromNow(-90),
+    },
+    {
+      id: 'admin-1',
+      name: 'Admin User',
+      email: 'admin@example.com',
+      role: 'admin',
+      active: true,
+      plan: null,
+      activeLoans: 0,
+      joinedAt: daysFromNow(-200),
+    },
+  ],
+};
+
+export const MOCK_ADMIN_LOANS = {
+  success: true,
+  data: [
+    {
+      id: 'aloan-1',
+      bookId: 'book-1',
+      bookTitle: 'The Great Gatsby',
+      memberName: 'Test Member',
+      memberEmail: 'member@example.com',
+      borrowedAt: daysFromNow(-3),
+      dueDate: daysFromNow(11),
+      returnedAt: null,
+      status: 'ACTIVE',
+    },
+    {
+      id: 'aloan-2',
+      bookId: 'book-3',
+      bookTitle: 'Ponniyin Selvan',
+      memberName: 'Test Member',
+      memberEmail: 'member@example.com',
+      borrowedAt: daysFromNow(-20),
+      dueDate: daysFromNow(-6),
+      returnedAt: null,
+      status: 'OVERDUE',
+    },
+  ],
+};
+
+export const MOCK_ADMIN_LOANS_OVERDUE = {
+  success: true,
+  data: [MOCK_ADMIN_LOANS.data[1]],
+};
+
+export const MOCK_BOOK_CREATED = {
+  success: true,
+  data: { ...MOCK_BOOK_ITEMS[0], id: 'book-new', title: 'New Book' },
+};

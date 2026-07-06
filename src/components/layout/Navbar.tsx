@@ -40,6 +40,11 @@ export function Navbar() {
           Dashboard
         </NavLink>
       )}
+      {user?.role === "admin" && (
+        <NavLink to="/admin" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+          Admin
+        </NavLink>
+      )}
     </>
   );
 

@@ -13,6 +13,9 @@ import {
   MOCK_SUBSCRIBE_STANDARD_SUCCESS,
   MOCK_PROFILE,
   MOCK_PROFILE_UPDATED,
+  MOCK_ADMIN_USERS,
+  MOCK_ADMIN_LOANS,
+  MOCK_BOOK_CREATED,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -96,6 +99,20 @@ export async function setupProfileApiMock(
   await page.route(`${API_BASE}/users/*`, (route) =>
     route.fulfill(fulfill(route.request().method() === 'PUT' ? updated : profile)),
   );
+}
+
+export async function setupAdminApiMocks(
+  page: Page,
+  {
+    users = MOCK_ADMIN_USERS,
+    loans = MOCK_ADMIN_LOANS,
+    bookSaved = MOCK_BOOK_CREATED,
+  }: { users?: unknown; loans?: unknown; bookSaved?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/admin/users`, (route) => route.fulfill(fulfill(users)));
+  await page.route(`${API_BASE}/admin/loans*`, (route) => route.fulfill(fulfill(loans)));
+  await page.route(`${API_BASE}/admin/books`, (route) => route.fulfill(fulfill(bookSaved)));
+  await page.route(`${API_BASE}/admin/books/*`, (route) => route.fulfill(fulfill(bookSaved)));
 }
 
 export async function setupAllApiMocks(page: Page) {
