@@ -3,6 +3,7 @@ import { MOCK_USER_STORAGE } from './mock-data';
 
 type AuthFixtures = {
   authenticatedPage: Page;
+  adminPage: Page;
 };
 
 export const test = base.extend<AuthFixtures>({
@@ -14,6 +15,17 @@ export const test = base.extend<AuthFixtures>({
       localStorage.setItem('refresh_token', 'test-refresh-token-123');
       localStorage.setItem('user', JSON.stringify(user));
     }, MOCK_USER_STORAGE);
+    await use(page);
+  },
+  adminPage: async ({ page }, use) => {
+    await page.addInitScript(
+      (user) => {
+        localStorage.setItem('access_token', 'test-access-token-123');
+        localStorage.setItem('refresh_token', 'test-refresh-token-123');
+        localStorage.setItem('user', JSON.stringify(user));
+      },
+      { ...MOCK_USER_STORAGE, id: 'admin-1', name: 'Admin User', role: 'admin' },
+    );
     await use(page);
   },
 });
