@@ -1,0 +1,12 @@
+# Test overrides: keep the suite runnable with zero environment setup.
+jwt:
+  secret: test-secret-key-32-chars-minimum!!
+  expiration-ms: 3600000
+  refresh-expiration-ms: 604800000
+
+spring:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate

@@ -1,14 +1,15 @@
--- Demo users (passwords are BCrypt of "password123")
+-- Demo seed data (ported from the former data.sql).
+-- Passwords are BCrypt of "password123".
+
 INSERT INTO users (id, email, password_hash, first_name, last_name, role, active, created_at, updated_at)
 VALUES
   ('a0000000-0000-0000-0000-000000000001', 'member@example.com',
    '$2b$10$9P3raAlJ/nPGMbF4zz01junv/DRJB5IvvxubR9NrVRxoNX1WzL5s.',
-   'Member', 'User', 'MEMBER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+   'Member', 'User', 'MEMBER', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
   ('a0000000-0000-0000-0000-000000000002', 'admin@example.com',
    '$2b$10$9P3raAlJ/nPGMbF4zz01junv/DRJB5IvvxubR9NrVRxoNX1WzL5s.',
-   'Admin', 'User', 'ADMIN', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+   'Admin', 'User', 'ADMIN', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- Subscriptions
 INSERT INTO subscriptions (id, user_id, plan, monthly_price, start_date, status, max_concurrent_loans, created_at)
 VALUES
   ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001',
@@ -16,7 +17,6 @@ VALUES
   ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002',
    'ADMIN', 0.00, CURRENT_TIMESTAMP, 'ACTIVE', 2147483647, CURRENT_TIMESTAMP);
 
--- Books
 INSERT INTO books (id, title, author, isbn, description, total_copies, available_copies, purchase_price, category, language, page_count, rating, cover_url, published_year, created_at)
 VALUES
   ('c0000000-0000-0000-0000-000000000001',
@@ -50,13 +50,12 @@ VALUES
    3, 2, 29.99, 'Technology', 'English', 431, 4.3,
    'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg', 2008, CURRENT_TIMESTAMP);
 
--- One active loan for member user
+-- One active loan for the member user
 INSERT INTO loans (id, user_id, book_id, borrowed_at, due_date, status, created_at)
 VALUES
   ('d0000000-0000-0000-0000-000000000001',
    'a0000000-0000-0000-0000-000000000001',
    'c0000000-0000-0000-0000-000000000001',
-   CURRENT_TIMESTAMP, DATEADD('DAY', 14, CURRENT_TIMESTAMP), 'ACTIVE', CURRENT_TIMESTAMP);
+   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '14' DAY, 'ACTIVE', CURRENT_TIMESTAMP);
 
--- Update available copies for that loan
 UPDATE books SET available_copies = 3 WHERE id = 'c0000000-0000-0000-0000-000000000001';

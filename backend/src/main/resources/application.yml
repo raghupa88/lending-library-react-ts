@@ -4,13 +4,20 @@ spring:
   profiles:
     active: dev
   jpa:
+    # Flyway owns the schema; Hibernate only validates entities against it.
     hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  sql:
+    init:
+      # Flyway is the only schema/data writer; never run script initializers.
+      mode: never
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:lendinglibrary;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
@@ -20,9 +27,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  sql:
-    init:
-      mode: always
 
 server:
   port: 8080
@@ -38,9 +42,15 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:dev-secret-key-32-chars-minimum-!!!}
+  # 12-factor: no baked-in secret. The app fails fast at startup when
+  # JWT_SECRET is unset — see .env.example / docker-compose.yml.
+  secret: ${JWT_SECRET}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
 
@@ -51,3 +61,22 @@ logging:
   level:
     root: INFO
     com.lendinglibrary: DEBUG
+
+---
+# Postgres profile: used by docker-compose and real deployments.
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lendinglibrary}
+    username: ${DB_USER:lending}
+    password: ${DB_PASSWORD}
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    com.lendinglibrary: INFO
