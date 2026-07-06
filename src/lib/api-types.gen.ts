@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a notification as read */
+        put: operations["markRead"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/loans/{id}/return": {
         parameters: {
             query?: never;
@@ -228,6 +245,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's notifications, newest first */
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unread notification count, for the navbar bell badge */
+        get: operations["unreadCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/books": {
         parameters: {
             query?: never;
@@ -236,7 +287,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all books with optional filters */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -270,7 +321,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all members with plan and active-loan counts */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -287,7 +338,7 @@ export interface paths {
             cookie?: never;
         };
         /** List all loans, optionally filtered by status (active/overdue/returned) */
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -320,6 +371,22 @@ export interface components {
             role?: string;
             phone?: string;
             address?: string;
+        };
+        ApiResponseNotificationResponse: {
+            success?: boolean;
+            data?: components["schemas"]["NotificationResponse"];
+            message?: string;
+            error?: string;
+        };
+        NotificationResponse: {
+            /** Format: uuid */
+            id?: string;
+            type?: string;
+            title?: string;
+            body?: string;
+            read?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
         };
         ApiResponseLoanResponse: {
             success?: boolean;
@@ -499,6 +566,20 @@ export interface components {
             message?: string;
             error?: string;
         };
+        ApiResponseListNotificationResponse: {
+            success?: boolean;
+            data?: components["schemas"]["NotificationResponse"][];
+            message?: string;
+            error?: string;
+        };
+        ApiResponseMapStringLong: {
+            success?: boolean;
+            data?: {
+                [key: string]: number;
+            };
+            message?: string;
+            error?: string;
+        };
         ApiResponseListLoanResponse: {
             success?: boolean;
             data?: components["schemas"]["LoanResponse"][];
@@ -618,6 +699,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseUserResponse"];
+                };
+            };
+        };
+    };
+    markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseNotificationResponse"];
                 };
             };
         };
@@ -954,6 +1057,46 @@ export interface operations {
     };
     list: {
         parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListNotificationResponse"];
+                };
+            };
+        };
+    };
+    unreadCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapStringLong"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
             query?: {
                 search?: string;
                 category?: string;
@@ -1002,7 +1145,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1022,7 +1165,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: {
                 status?: string;

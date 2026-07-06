@@ -16,6 +16,9 @@ import {
   MOCK_ADMIN_USERS,
   MOCK_ADMIN_LOANS,
   MOCK_BOOK_CREATED,
+  MOCK_NOTIFICATIONS,
+  MOCK_UNREAD_COUNT,
+  MOCK_NOTIFICATION_MARKED_READ,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -115,6 +118,23 @@ export async function setupAdminApiMocks(
   await page.route(`${API_BASE}/admin/books/*`, (route) => route.fulfill(fulfill(bookSaved)));
 }
 
+export async function setupNotificationsApiMock(
+  page: Page,
+  {
+    list = MOCK_NOTIFICATIONS,
+    unreadCount = MOCK_UNREAD_COUNT,
+    markRead = MOCK_NOTIFICATION_MARKED_READ,
+  }: { list?: unknown; unreadCount?: unknown; markRead?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/notifications/unread-count`, (route) =>
+    route.fulfill(fulfill(unreadCount)),
+  );
+  await page.route(`${API_BASE}/notifications/*/read`, (route) =>
+    route.fulfill(fulfill(markRead)),
+  );
+  await page.route(`${API_BASE}/notifications`, (route) => route.fulfill(fulfill(list)));
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -124,4 +144,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupLoansApiMock(page);
   await setupSubscriptionsApiMock(page);
   await setupProfileApiMock(page);
+  await setupNotificationsApiMock(page);
 }

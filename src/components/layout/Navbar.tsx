@@ -6,6 +6,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/button";
 import { Avatar } from "../ui/avatar";
 import { Sheet } from "../ui/sheet";
+import { NotificationBell } from "../../features/notifications/NotificationBell";
 import { cn } from "../../lib/cn";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -78,6 +79,7 @@ export function Navbar() {
 
           {user ? (
             <div className="hidden items-center gap-3 md:flex">
+              <NotificationBell />
               <Link
                 to="/dashboard"
                 className="flex items-center gap-2"

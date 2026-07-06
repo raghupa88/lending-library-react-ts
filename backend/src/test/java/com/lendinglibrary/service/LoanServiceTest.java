@@ -13,6 +13,8 @@ import com.lendinglibrary.domain.enums.Role;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
+import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
+import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.LoanRepository;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,12 +26,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +44,7 @@ class LoanServiceTest {
     @Mock BookService bookService;
     @Mock UserService userService;
     @Mock SubscriptionRepository subscriptionRepository;
+    @Mock DomainEventPublisher events;
     @InjectMocks LoanService loanService;
 
     private User user;
@@ -79,6 +85,7 @@ class LoanServiceTest {
 
         assertThat(result.status()).isEqualTo("ACTIVE");
         assertThat(book.getAvailableCopies()).isEqualTo(1);
+        verify(events).publish(eq(Topics.LOAN_EVENTS), eq("loan.created"), any(), any(Map.class));
     }
 
     @Test

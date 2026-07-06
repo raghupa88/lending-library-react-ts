@@ -7,6 +7,8 @@ import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
+import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
+import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
+    private final DomainEventPublisher events;
 
     public List<SubscriptionPlanResponse> getPlans() {
         return List.of(
@@ -64,7 +68,15 @@ public class SubscriptionService {
                 .startDate(LocalDateTime.now()).status(SubscriptionStatus.ACTIVE)
                 .maxConcurrentLoans(req.plan().maxConcurrentLoans())
                 .build();
+        sub = subscriptionRepository.save(sub);
 
-        return SubscriptionResponse.from(subscriptionRepository.save(sub));
+        events.publish(Topics.SUBSCRIPTION_EVENTS, "subscription.changed", sub.getId().toString(), Map.of(
+                "userId", user.getId().toString(),
+                "userEmail", user.getEmail(),
+                "plan", sub.getPlan().name(),
+                "monthlyPrice", sub.getMonthlyPrice().toString()
+        ));
+
+        return SubscriptionResponse.from(sub);
     }
 }

@@ -87,11 +87,13 @@ docs/adr/            # architecture decision records
 
 ## Roadmap
 
-The redesign lands branch by branch: catalog + book detail, auth screens,
-member dashboard with the full borrow/return + subscription loop, admin panel,
-then the backend/infra track (Postgres/Flyway, Kafka events, Cassandra
-activity feeds, Elasticsearch search + Kibana observability, Docker Compose,
-OpenShift). Details in `docs/adr/ADR-006-backend-stack-roles.md`.
+Shipped: full frontend redesign (catalog, auth, member dashboard, admin
+panel), Postgres/Flyway + Docker Compose, refresh-token rotation with dual-
+mode (web cookie / native body) delivery, and a Kafka event backbone
+(transactional outbox + notification bell — see `docs/events.md`). Next:
+Cassandra activity feeds, Elasticsearch search + Kibana observability,
+OpenShift. Details in `docs/adr/ADR-006-backend-stack-roles.md` and
+`docs/adr/ADR-008-kafka-outbox-and-notifications.md`.
 
 ## License
 
