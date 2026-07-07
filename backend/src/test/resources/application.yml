@@ -1,8 +1,14 @@
 # Test overrides: keep the suite runnable with zero environment setup.
+# This file replaces (not merges with) src/main/resources/application.yml
+# on the test classpath, so every property SecurityConfig etc. need must be
+# repeated here, not just the ones a given test happens to touch.
 jwt:
   secret: test-secret-key-32-chars-minimum!!
   expiration-ms: 3600000
   refresh-expiration-ms: 604800000
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
 
 spring:
   flyway:
