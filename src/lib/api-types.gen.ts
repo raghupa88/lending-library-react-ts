@@ -879,6 +879,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Enrollment/completion/revenue/attendance aggregates across all courses */
+        get: operations["getAnalytics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/bookings/{id}": {
         parameters: {
             query?: never;
@@ -1765,6 +1782,42 @@ export interface components {
             /** Format: date */
             sessionDate?: string;
             topic?: string;
+        };
+        AdminAnalyticsResponse: {
+            /** Format: int64 */
+            totalEnrollments?: number;
+            totalRevenue?: number;
+            completionFunnel?: components["schemas"]["CompletionFunnelResponse"];
+            enrollmentsByDay?: components["schemas"]["DailyEnrollmentCount"][];
+            revenueByCourse?: components["schemas"]["CourseRevenueResponse"][];
+            /** Format: double */
+            attendanceRatePercent?: number;
+        };
+        ApiResponseAdminAnalyticsResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminAnalyticsResponse"];
+            message?: string;
+            error?: string;
+        };
+        CompletionFunnelResponse: {
+            /** Format: int64 */
+            enrolled?: number;
+            /** Format: int64 */
+            startedLesson?: number;
+            /** Format: int64 */
+            completedAllLessons?: number;
+            /** Format: int64 */
+            certified?: number;
+        };
+        CourseRevenueResponse: {
+            courseTitle?: string;
+            revenue?: number;
+        };
+        DailyEnrollmentCount: {
+            /** Format: date */
+            date?: string;
+            /** Format: int64 */
+            count?: number;
         };
     };
     responses: never;
@@ -3137,6 +3190,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminBatchDetailResponse"];
+                };
+            };
+        };
+    };
+    getAnalytics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminAnalyticsResponse"];
                 };
             };
         };

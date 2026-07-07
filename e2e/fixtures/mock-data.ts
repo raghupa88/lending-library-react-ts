@@ -970,3 +970,29 @@ export const MOCK_NOTIFICATION_MARKED_READ = {
   success: true,
   data: { ...MOCK_NOTIFICATIONS.data[0], read: true },
 };
+
+// --- Learn analytics (L6) ---
+
+export const MOCK_ADMIN_ANALYTICS = {
+  success: true,
+  data: {
+    totalEnrollments: 2,
+    totalRevenue: 255,
+    completionFunnel: { enrolled: 2, startedLesson: 1, completedAllLessons: 1, certified: 0 },
+    enrollmentsByDay: [{ date: '2026-07-01', count: 2 }],
+    revenueByCourse: [{ courseTitle: 'Analytics Course', revenue: 255 }],
+    attendanceRatePercent: 100,
+  },
+};
+
+export const MOCK_ADMIN_ANALYTICS_EMPTY = {
+  success: true,
+  data: {
+    totalEnrollments: 0,
+    totalRevenue: 0,
+    completionFunnel: { enrolled: 0, startedLesson: 0, completedAllLessons: 0, certified: 0 },
+    enrollmentsByDay: [],
+    revenueByCourse: [],
+    attendanceRatePercent: 0,
+  },
+};

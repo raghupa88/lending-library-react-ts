@@ -2,6 +2,7 @@ package com.lendinglibrary.api.controller;
 
 import com.lendinglibrary.api.dto.*;
 import com.lendinglibrary.api.envelope.ApiResponse;
+import com.lendinglibrary.application.service.AnalyticsService;
 import com.lendinglibrary.application.service.BatchService;
 import com.lendinglibrary.application.service.CourseService;
 import com.lendinglibrary.application.service.TestService;
@@ -32,6 +33,7 @@ public class AdminLearnController {
     private final TestService testService;
     private final VenueService venueService;
     private final BatchService batchService;
+    private final AnalyticsService analyticsService;
 
     @GetMapping("/courses")
     @Operation(summary = "List all courses, any status")
@@ -173,5 +175,11 @@ public class AdminLearnController {
             @PathVariable UUID id, @Valid @RequestBody AttendanceInput req) {
         batchService.markAttendance(id, req);
         return ResponseEntity.ok(ApiResponse.ok(null, "Attendance recorded"));
+    }
+
+    @GetMapping("/analytics")
+    @Operation(summary = "Enrollment/completion/revenue/attendance aggregates across all courses")
+    public ResponseEntity<ApiResponse<AdminAnalyticsResponse>> getAnalytics() {
+        return ResponseEntity.ok(ApiResponse.ok(analyticsService.getAnalytics()));
     }
 }
