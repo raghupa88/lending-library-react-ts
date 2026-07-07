@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap, Award } from "lucide-react";
+import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap, Award, MapPin } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   useMyLoansQuery,
@@ -15,6 +15,7 @@ import {
 } from "../../features/subscriptions/queries";
 import { useMyEnrollmentsQuery } from "../../features/learn/queries";
 import { useMyCertificatesQuery } from "../../features/learn/tests-queries";
+import { useMyBookingsQuery, useCancelBooking } from "../../features/learn/batches-queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -50,7 +51,9 @@ export default function Dashboard() {
   const { data: subscription } = useCurrentSubscriptionQuery(Boolean(user));
   const { data: enrollments } = useMyEnrollmentsQuery(Boolean(user));
   const { data: certificates } = useMyCertificatesQuery(Boolean(user));
+  const { data: bookings } = useMyBookingsQuery(Boolean(user));
   const returnBook = useReturnBook();
+  const cancelBooking = useCancelBooking();
 
   if (!user) return null;
 
@@ -66,6 +69,16 @@ export default function Dashboard() {
         toast("error", err instanceof ApiError ? err.message : "Couldn't return the book"),
     });
   };
+
+  const handleCancelBooking = (bookingId: string, courseTitle: string) => {
+    cancelBooking.mutate(bookingId, {
+      onSuccess: () => toast("success", `Cancelled your booking for "${courseTitle}"`),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't cancel the booking"),
+    });
+  };
+
+  const activeBookings = (bookings ?? []).filter((b) => b.status !== "CANCELLED");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -249,6 +262,51 @@ export default function Dashboard() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {activeBookings.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wide">
+                  In-person batches
+                </h3>
+                <ul className="mt-2 space-y-2">
+                  {activeBookings.map((booking) => (
+                    <li key={booking.id}>
+                      <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
+                        <div className="flex items-start gap-3">
+                          <MapPin className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" />
+                          <div>
+                            <div className="font-medium">{booking.courseTitle}</div>
+                            <div className="text-xs text-muted">
+                              {booking.venueName} · {booking.startsOn} – {booking.endsOn}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                              booking.status === "CONFIRMED"
+                                ? "bg-success/15 text-success"
+                                : "border border-border text-muted",
+                            )}
+                          >
+                            {booking.status === "CONFIRMED" ? "Confirmed" : "Waitlisted"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={cancelBooking.isPending}
+                            onClick={() => handleCancelBooking(booking.id, booking.courseTitle)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             {certificates && certificates.length > 0 && (

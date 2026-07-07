@@ -54,6 +54,51 @@ class NotificationConsumerTest {
         return new ObjectMapper().findAndRegisterModules().writeValueAsString(event);
     }
 
+    private String courseEventPayload(UUID eventId, String type, Map<String, Object> extra) throws Exception {
+        var data = new java.util.HashMap<String, Object>();
+        data.put("userEmail", user.getEmail());
+        data.put("courseTitle", "Money Foundations");
+        data.putAll(extra);
+        var event = new DomainEvent(eventId, type, "ref-1", LocalDateTime.now(), data);
+        return new ObjectMapper().findAndRegisterModules().writeValueAsString(event);
+    }
+
+    @Test
+    void onCourseEvent_enrolled_createsNotification() throws Exception {
+        UUID eventId = UUID.randomUUID();
+        when(processedEventRepository.existsById(eventId)).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        consumer.onCourseEvent(courseEventPayload(eventId, "course.enrolled", Map.of()));
+
+        verify(notificationRepository).save(argThat(n ->
+                n.getType().equals("course.enrolled") && n.getTitle().contains("Money Foundations")));
+        verify(mailSender).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void onCourseEvent_testPassed_includesScoreInBody() throws Exception {
+        UUID eventId = UUID.randomUUID();
+        when(processedEventRepository.existsById(eventId)).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        consumer.onCourseEvent(courseEventPayload(eventId, "test.passed", Map.of("scorePercent", "100")));
+
+        verify(notificationRepository).save(argThat(n ->
+                n.getType().equals("test.passed") && n.getBody().contains("100")));
+    }
+
+    @Test
+    void onCourseEvent_batchBooked_createsNotification() throws Exception {
+        UUID eventId = UUID.randomUUID();
+        when(processedEventRepository.existsById(eventId)).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        consumer.onCourseEvent(courseEventPayload(eventId, "batch.booked", Map.of()));
+
+        verify(notificationRepository).save(argThat(n -> n.getType().equals("batch.booked")));
+    }
+
     @Test
     void onLoanEvent_createsNotificationAndSendsEmail() throws Exception {
         UUID eventId = UUID.randomUUID();

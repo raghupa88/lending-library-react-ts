@@ -2,8 +2,11 @@ package com.lendinglibrary.api.controller;
 
 import com.lendinglibrary.api.dto.*;
 import com.lendinglibrary.api.envelope.ApiResponse;
+import com.lendinglibrary.application.service.BatchService;
 import com.lendinglibrary.application.service.CourseService;
 import com.lendinglibrary.application.service.TestService;
+import com.lendinglibrary.application.service.VenueService;
+import com.lendinglibrary.domain.enums.BatchStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,8 @@ public class AdminLearnController {
 
     private final CourseService courseService;
     private final TestService testService;
+    private final VenueService venueService;
+    private final BatchService batchService;
 
     @GetMapping("/courses")
     @Operation(summary = "List all courses, any status")
@@ -108,5 +113,65 @@ public class AdminLearnController {
             @PathVariable UUID id, @Valid @RequestBody QuestionRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(testService.addQuestion(id, req), "Question added"));
+    }
+
+    @GetMapping("/venues")
+    @Operation(summary = "List all venues")
+    public ResponseEntity<ApiResponse<List<VenueResponse>>> listVenues() {
+        return ResponseEntity.ok(ApiResponse.ok(venueService.list()));
+    }
+
+    @PostMapping("/venues")
+    @Operation(summary = "Create a venue")
+    public ResponseEntity<ApiResponse<VenueResponse>> createVenue(@Valid @RequestBody VenueRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(venueService.create(req), "Venue created"));
+    }
+
+    @PutMapping("/venues/{id}")
+    @Operation(summary = "Update a venue")
+    public ResponseEntity<ApiResponse<VenueResponse>> updateVenue(
+            @PathVariable UUID id, @Valid @RequestBody VenueRequest req) {
+        return ResponseEntity.ok(ApiResponse.ok(venueService.update(id, req), "Venue updated"));
+    }
+
+    @GetMapping("/courses/{id}/batches")
+    @Operation(summary = "List a course's in-person batches, with roster counts")
+    public ResponseEntity<ApiResponse<List<AdminBatchSummaryResponse>>> listBatches(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(batchService.listForAdmin(id)));
+    }
+
+    @GetMapping("/batches/{id}")
+    @Operation(summary = "Get a batch's sessions and full roster")
+    public ResponseEntity<ApiResponse<AdminBatchDetailResponse>> getBatch(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(batchService.getForAdmin(id)));
+    }
+
+    @PostMapping("/courses/{id}/batches")
+    @Operation(summary = "Schedule a batch (with its sessions) for a course")
+    public ResponseEntity<ApiResponse<AdminBatchSummaryResponse>> createBatch(
+            @PathVariable UUID id, @Valid @RequestBody BatchRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(batchService.createBatch(id, req), "Batch scheduled"));
+    }
+
+    @PutMapping("/batches/{id}/publish")
+    @Operation(summary = "Publish a batch, opening it for booking")
+    public ResponseEntity<ApiResponse<AdminBatchSummaryResponse>> publishBatch(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(batchService.setStatus(id, BatchStatus.PUBLISHED), "Batch published"));
+    }
+
+    @PutMapping("/batches/{id}/cancel")
+    @Operation(summary = "Cancel a batch")
+    public ResponseEntity<ApiResponse<AdminBatchSummaryResponse>> cancelBatch(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(batchService.setStatus(id, BatchStatus.CANCELLED), "Batch cancelled"));
+    }
+
+    @PutMapping("/sessions/{id}/attendance")
+    @Operation(summary = "Mark a learner present/absent for a session")
+    public ResponseEntity<ApiResponse<Void>> markAttendance(
+            @PathVariable UUID id, @Valid @RequestBody AttendanceInput req) {
+        batchService.markAttendance(id, req);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Attendance recorded"));
     }
 }

@@ -39,6 +39,17 @@ import {
   MOCK_ADMIN_TEST_DETAIL,
   MOCK_TEST_CREATED,
   MOCK_QUESTION_CREATED,
+  MOCK_VENUES,
+  MOCK_VENUE_CREATED,
+  MOCK_BATCHES_FOR_LEARNER,
+  MOCK_BOOKING_CONFIRMED,
+  MOCK_MY_BOOKINGS_EMPTY,
+  MOCK_CANCEL_BOOKING_SUCCESS,
+  MOCK_ADMIN_BATCHES,
+  MOCK_ADMIN_BATCH_CREATED,
+  MOCK_ADMIN_BATCH_PUBLISHED,
+  MOCK_ADMIN_BATCH_DETAIL,
+  MOCK_ATTENDANCE_MARKED,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -292,6 +303,60 @@ export async function setupAdminLearnApiMocks(
   );
 }
 
+export async function setupBatchesApiMocks(
+  page: Page,
+  {
+    batches = MOCK_BATCHES_FOR_LEARNER,
+    book = MOCK_BOOKING_CONFIRMED,
+    myBookings = MOCK_MY_BOOKINGS_EMPTY,
+    cancel = MOCK_CANCEL_BOOKING_SUCCESS,
+  }: { batches?: unknown; book?: unknown; myBookings?: unknown; cancel?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/learn/batches/*/book`, (route) => route.fulfill(fulfill(book)));
+  await page.route(`${API_BASE}/learn/bookings/*`, (route) => route.fulfill(fulfill(cancel)));
+  await page.route(`${API_BASE}/learn/me/bookings`, (route) => route.fulfill(fulfill(myBookings)));
+  await page.route(`${API_BASE}/learn/courses/*/batches`, (route) => route.fulfill(fulfill(batches)));
+}
+
+export async function setupAdminBatchesApiMocks(
+  page: Page,
+  {
+    venues = MOCK_VENUES,
+    venueSaved = MOCK_VENUE_CREATED,
+    batches = MOCK_ADMIN_BATCHES,
+    batchSaved = MOCK_ADMIN_BATCH_CREATED,
+    batchPublished = MOCK_ADMIN_BATCH_PUBLISHED,
+    detail = MOCK_ADMIN_BATCH_DETAIL,
+    attendanceMarked = MOCK_ATTENDANCE_MARKED,
+  }: {
+    venues?: unknown;
+    venueSaved?: unknown;
+    batches?: unknown;
+    batchSaved?: unknown;
+    batchPublished?: unknown;
+    detail?: unknown;
+    attendanceMarked?: unknown;
+  } = {},
+) {
+  await page.route(`${API_BASE}/admin/learn/venues`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'POST' ? venueSaved : venues)),
+  );
+  await page.route(`${API_BASE}/admin/learn/venues/*`, (route) => route.fulfill(fulfill(venueSaved)));
+  await page.route(`${API_BASE}/admin/learn/courses/*/batches`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'POST' ? batchSaved : batches)),
+  );
+  await page.route(`${API_BASE}/admin/learn/batches/*/publish`, (route) =>
+    route.fulfill(fulfill(batchPublished)),
+  );
+  await page.route(`${API_BASE}/admin/learn/batches/*/cancel`, (route) =>
+    route.fulfill(fulfill(batchPublished)),
+  );
+  await page.route(`${API_BASE}/admin/learn/sessions/*/attendance`, (route) =>
+    route.fulfill(fulfill(attendanceMarked)),
+  );
+  await page.route(`${API_BASE}/admin/learn/batches/*`, (route) => route.fulfill(fulfill(detail)));
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -304,4 +369,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupNotificationsApiMock(page);
   await setupLearnApiMocks(page);
   await setupTestsApiMocks(page);
+  await setupBatchesApiMocks(page);
 }

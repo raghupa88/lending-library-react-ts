@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle, ClipboardCheck, MapPin, Users } from "lucide-react";
 import {
   useCourseQuery,
   useEnrollInCourse,
@@ -8,6 +8,7 @@ import {
   type Lesson,
 } from "../../features/learn/queries";
 import { useCourseTestsQuery } from "../../features/learn/tests-queries";
+import { useCourseBatchesQuery, useBookSeat } from "../../features/learn/batches-queries";
 import { TRACK_LABELS, LEVEL_LABELS } from "../../features/learn/labels";
 import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
@@ -42,6 +43,27 @@ export default function LearnDetail() {
   const { data: progress } = useCourseProgressQuery(course?.id, alreadyEnrolled);
   const completedIds = new Set(progress?.completedLessonIds ?? []);
   const { data: tests } = useCourseTestsQuery(course?.id, alreadyEnrolled);
+  const { data: batches } = useCourseBatchesQuery(course?.id);
+  const bookSeat = useBookSeat();
+
+  const handleBookSeat = (batchId: string) => {
+    if (!user) {
+      navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    bookSeat.mutate(batchId, {
+      onSuccess: (booking) =>
+        toast(
+          "success",
+          booking.status === "CONFIRMED" ? "Seat booked!" : "You've been added to the waitlist",
+          <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+            View on your dashboard →
+          </Link>,
+        ),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't book a seat"),
+    });
+  };
 
   const handleEnroll = () => {
     if (!user || !course) {
@@ -224,6 +246,49 @@ export default function LearnDetail() {
                     </li>
                   );
                 })}
+              </ul>
+            </>
+          )}
+
+          {batches && batches.length > 0 && (
+            <>
+              <h2 className="mt-10 font-display text-xl font-semibold">Upcoming in-person batches</h2>
+              <ul className="mt-4 space-y-3">
+                {batches.map((b) => (
+                  <li key={b.id}>
+                    <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <MapPin className="size-4 text-muted" aria-hidden="true" />
+                          {b.venueName}, {b.city}
+                        </div>
+                        <div className="mt-1 text-sm text-muted">
+                          {b.startsOn} – {b.endsOn} · {b.scheduleText} · {b.instructorName}
+                        </div>
+                        <div className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                          <Users className="size-4" aria-hidden="true" />
+                          {b.seatsAvailable > 0
+                            ? `${b.seatsAvailable} seat${b.seatsAvailable === 1 ? "" : "s"} available`
+                            : "Full — bookings join the waitlist"}
+                          {b.fee > 0 && ` · ₹${b.fee.toFixed(2)}`}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {b.myBookingStatus === "CONFIRMED" && <Badge variant="success">You're booked</Badge>}
+                        {b.myBookingStatus === "WAITLISTED" && <Badge variant="outline">Waitlisted</Badge>}
+                        {!b.myBookingStatus && (
+                          <Button
+                            size="sm"
+                            disabled={bookSeat.isPending}
+                            onClick={() => handleBookSeat(b.id)}
+                          >
+                            {b.seatsAvailable > 0 ? "Book a seat" : "Join waitlist"}
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  </li>
+                ))}
               </ul>
             </>
           )}
