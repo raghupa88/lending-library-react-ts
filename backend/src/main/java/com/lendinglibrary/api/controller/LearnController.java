@@ -62,12 +62,13 @@ public class LearnController {
     }
 
     @PostMapping("/courses/{id}/enroll")
-    @Operation(summary = "Enroll in a free course")
+    @Operation(summary = "Enroll in a course; paid courses require a PaymentInput body")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> enroll(
-            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+            @PathVariable UUID id, @RequestBody(required = false) PaymentInput payment,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
-                enrollmentService.enroll(id, user.getUsername()), "Enrolled!"));
+                enrollmentService.enroll(id, user.getUsername(), payment), "Enrolled!"));
     }
 
     @GetMapping("/me/enrollments")
@@ -154,12 +155,13 @@ public class LearnController {
     }
 
     @PostMapping("/batches/{id}/book")
-    @Operation(summary = "Book a seat in a batch (waitlisted automatically once full)")
+    @Operation(summary = "Book a seat in a batch (waitlisted automatically once full); paid batches require a PaymentInput body")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<ApiResponse<BookingResponse>> bookSeat(
-            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+            @PathVariable UUID id, @RequestBody(required = false) PaymentInput payment,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
-                bookingService.bookSeat(id, user.getUsername()), "Seat booked!"));
+                bookingService.bookSeat(id, user.getUsername(), payment), "Seat booked!"));
     }
 
     @DeleteMapping("/bookings/{id}")

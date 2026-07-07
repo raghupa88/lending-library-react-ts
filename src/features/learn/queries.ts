@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import type { PaymentInput } from "../../lib/payment";
 
 export type CourseTrack =
   | "MONEY_FOUNDATIONS"
@@ -63,6 +64,7 @@ export interface Enrollment {
   totalLessons: number;
   completedLessons: number;
   nextLessonId: string | null;
+  amountPaid: number;
 }
 
 /** Matches backend CourseProgressResponse. */
@@ -128,8 +130,8 @@ export function useMyEnrollmentsQuery(enabled = true) {
 export function useEnrollInCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (courseId: string) =>
-      api.post<Enrollment>(`/learn/courses/${courseId}/enroll`),
+    mutationFn: ({ courseId, payment }: { courseId: string; payment?: PaymentInput }) =>
+      api.post<Enrollment>(`/learn/courses/${courseId}/enroll`, payment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["learn", "enrollments"] });
     },

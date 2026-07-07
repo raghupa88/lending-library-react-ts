@@ -4,6 +4,7 @@ import com.lendinglibrary.domain.enums.BookingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,4 +32,8 @@ public class Booking {
 
     @Column(name = "booked_at", nullable = false)
     private LocalDateTime bookedAt;
+
+    @Column(name = "amount_paid", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal amountPaid = BigDecimal.ZERO;
 }

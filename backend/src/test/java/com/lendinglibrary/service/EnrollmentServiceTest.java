@@ -1,15 +1,19 @@
 package com.lendinglibrary.service;
 
 import com.lendinglibrary.api.dto.CourseProgressResponse;
+import com.lendinglibrary.api.dto.PaymentInput;
 import com.lendinglibrary.application.service.EnrollmentService;
 import com.lendinglibrary.application.service.LessonProgressService;
+import com.lendinglibrary.application.service.PaymentService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.Course;
 import com.lendinglibrary.domain.entity.Enrollment;
+import com.lendinglibrary.domain.entity.Payment;
 import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.CourseLevel;
 import com.lendinglibrary.domain.enums.CourseStatus;
 import com.lendinglibrary.domain.enums.CourseTrack;
+import com.lendinglibrary.domain.enums.PaymentStatus;
 import com.lendinglibrary.domain.enums.Role;
 import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
@@ -45,6 +49,7 @@ class EnrollmentServiceTest {
     @Mock UserService userService;
     @Mock DomainEventPublisher events;
     @Mock LessonProgressService lessonProgressService;
+    @Mock PaymentService paymentService;
     @InjectMocks EnrollmentService enrollmentService;
 
     private User user;
@@ -63,6 +68,7 @@ class EnrollmentServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(user);
         when(courseRepository.findById(publishedFreeCourse.getId())).thenReturn(Optional.of(publishedFreeCourse));
         when(enrollmentRepository.findByUserAndCourse(user, publishedFreeCourse)).thenReturn(Optional.empty());
+        when(paymentService.priceForUser(user, BigDecimal.ZERO)).thenReturn(BigDecimal.ZERO);
         when(enrollmentRepository.save(any())).thenAnswer(inv -> {
             Enrollment e = inv.getArgument(0);
             e.setId(UUID.randomUUID());
@@ -71,7 +77,7 @@ class EnrollmentServiceTest {
         when(lessonProgressService.buildProgress(eq(publishedFreeCourse), any())).thenReturn(
                 new CourseProgressResponse(publishedFreeCourse.getId(), 6, 0, List.of(), UUID.randomUUID()));
 
-        var result = enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com");
+        var result = enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", null);
 
         assertThat(result.courseTitle()).isEqualTo("Money Foundations");
         assertThat(result.totalLessons()).isEqualTo(6);
@@ -85,20 +91,63 @@ class EnrollmentServiceTest {
         when(enrollmentRepository.findByUserAndCourse(user, publishedFreeCourse))
                 .thenReturn(Optional.of(Enrollment.builder().build()));
 
-        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com"))
+        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already enrolled");
     }
 
     @Test
-    void enroll_paidCourse_rejectedInL1() {
+    void enroll_paidCourse_withoutPaymentDetails_throws() {
         publishedFreeCourse.setPrice(new BigDecimal("999.00"));
         when(userService.findByEmail("member@example.com")).thenReturn(user);
         when(courseRepository.findById(publishedFreeCourse.getId())).thenReturn(Optional.of(publishedFreeCourse));
+        when(enrollmentRepository.findByUserAndCourse(user, publishedFreeCourse)).thenReturn(Optional.empty());
+        when(paymentService.priceForUser(user, new BigDecimal("999.00"))).thenReturn(new BigDecimal("999.00"));
 
-        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com"))
+        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Paid courses");
+                .hasMessageContaining("Payment details are required");
+    }
+
+    @Test
+    void enroll_paidCourse_successfulPayment_enrolls() {
+        publishedFreeCourse.setPrice(new BigDecimal("999.00"));
+        PaymentInput input = new PaymentInput("Test Member", "4242424242424242", "12", "2030", "123");
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(courseRepository.findById(publishedFreeCourse.getId())).thenReturn(Optional.of(publishedFreeCourse));
+        when(enrollmentRepository.findByUserAndCourse(user, publishedFreeCourse)).thenReturn(Optional.empty());
+        when(paymentService.priceForUser(user, new BigDecimal("999.00"))).thenReturn(new BigDecimal("999.00"));
+        when(paymentService.charge(user, com.lendinglibrary.domain.enums.PaymentPurpose.COURSE_ENROLLMENT,
+                publishedFreeCourse.getId(), new BigDecimal("999.00"), input))
+                .thenReturn(Payment.builder().status(PaymentStatus.SUCCEEDED).build());
+        when(enrollmentRepository.save(any())).thenAnswer(inv -> {
+            Enrollment e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+        when(lessonProgressService.buildProgress(eq(publishedFreeCourse), any())).thenReturn(
+                new CourseProgressResponse(publishedFreeCourse.getId(), 6, 0, List.of(), UUID.randomUUID()));
+
+        var result = enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", input);
+
+        assertThat(result.amountPaid()).isEqualByComparingTo("999.00");
+    }
+
+    @Test
+    void enroll_paidCourse_declinedPayment_throws() {
+        publishedFreeCourse.setPrice(new BigDecimal("999.00"));
+        PaymentInput input = new PaymentInput("Test Member", "4000000000000002", "12", "2030", "123");
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(courseRepository.findById(publishedFreeCourse.getId())).thenReturn(Optional.of(publishedFreeCourse));
+        when(enrollmentRepository.findByUserAndCourse(user, publishedFreeCourse)).thenReturn(Optional.empty());
+        when(paymentService.priceForUser(user, new BigDecimal("999.00"))).thenReturn(new BigDecimal("999.00"));
+        when(paymentService.charge(user, com.lendinglibrary.domain.enums.PaymentPurpose.COURSE_ENROLLMENT,
+                publishedFreeCourse.getId(), new BigDecimal("999.00"), input))
+                .thenReturn(Payment.builder().status(PaymentStatus.FAILED).failureReason("Your card was declined").build());
+
+        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", input))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("declined");
     }
 
     @Test
@@ -107,7 +156,7 @@ class EnrollmentServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(user);
         when(courseRepository.findById(publishedFreeCourse.getId())).thenReturn(Optional.of(publishedFreeCourse));
 
-        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com"))
+        assertThatThrownBy(() -> enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("isn't available");
     }
@@ -118,7 +167,7 @@ class EnrollmentServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(user);
         when(courseRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> enrollmentService.enroll(id, "member@example.com"))
+        assertThatThrownBy(() -> enrollmentService.enroll(id, "member@example.com", null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

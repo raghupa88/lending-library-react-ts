@@ -1,6 +1,8 @@
 package com.lendinglibrary.service;
 
+import com.lendinglibrary.api.dto.PaymentInput;
 import com.lendinglibrary.application.service.BookingService;
+import com.lendinglibrary.application.service.PaymentService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.*;
 import com.lendinglibrary.domain.enums.*;
@@ -36,6 +38,7 @@ class BookingServiceTest {
     @Mock BatchRepository batchRepository;
     @Mock UserService userService;
     @Mock DomainEventPublisher events;
+    @Mock PaymentService paymentService;
     @InjectMocks BookingService bookingService;
 
     private Course course;
@@ -61,13 +64,14 @@ class BookingServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(learner);
         when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
         when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(0L);
+        when(paymentService.priceForUser(learner, BigDecimal.ZERO)).thenReturn(BigDecimal.ZERO);
         when(bookingRepository.save(any())).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
             b.setId(UUID.randomUUID());
             return b;
         });
 
-        var result = bookingService.bookSeat(batch.getId(), "member@example.com");
+        var result = bookingService.bookSeat(batch.getId(), "member@example.com", null);
 
         assertThat(result.status()).isEqualTo("CONFIRMED");
         verify(events).publish(eq(Topics.COURSE_EVENTS), eq("batch.booked"), any(), any(Map.class));
@@ -79,13 +83,14 @@ class BookingServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(learner);
         when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
         when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(1L);
+        when(paymentService.priceForUser(learner, BigDecimal.ZERO)).thenReturn(BigDecimal.ZERO);
         when(bookingRepository.save(any())).thenAnswer(inv -> {
             Booking b = inv.getArgument(0);
             b.setId(UUID.randomUUID());
             return b;
         });
 
-        var result = bookingService.bookSeat(batch.getId(), "member@example.com");
+        var result = bookingService.bookSeat(batch.getId(), "member@example.com", null);
 
         assertThat(result.status()).isEqualTo("WAITLISTED");
         verify(events, never()).publish(any(), any(), any(), any());
@@ -98,7 +103,7 @@ class BookingServiceTest {
         when(userService.findByEmail("member@example.com")).thenReturn(learner);
         when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of(existing));
 
-        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com"))
+        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already have a booking");
     }
@@ -108,19 +113,79 @@ class BookingServiceTest {
         batch.setStatus(BatchStatus.DRAFT);
         when(batchRepository.findById(batch.getId())).thenReturn(Optional.of(batch));
 
-        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com"))
+        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("isn't open for booking");
     }
 
     @Test
-    void bookSeat_paidBatch_rejectedInL4() {
+    void bookSeat_paidBatch_withoutPaymentDetails_throws() {
         batch.setFee(new BigDecimal("500.00"));
         when(batchRepository.findById(batch.getId())).thenReturn(Optional.of(batch));
+        when(userService.findByEmail("member@example.com")).thenReturn(learner);
+        when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
+        when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(0L);
+        when(paymentService.priceForUser(learner, new BigDecimal("500.00"))).thenReturn(new BigDecimal("500.00"));
 
-        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com"))
+        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com", null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Paid batches");
+                .hasMessageContaining("Payment details are required");
+    }
+
+    @Test
+    void bookSeat_paidBatch_fullCapacity_rejectsWaitlisting() {
+        batch.setFee(new BigDecimal("500.00"));
+        when(batchRepository.findById(batch.getId())).thenReturn(Optional.of(batch));
+        when(userService.findByEmail("member@example.com")).thenReturn(learner);
+        when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
+        when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(1L);
+        when(paymentService.priceForUser(learner, new BigDecimal("500.00"))).thenReturn(new BigDecimal("500.00"));
+
+        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com", null))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("can't be waitlisted");
+    }
+
+    @Test
+    void bookSeat_paidBatch_successfulPayment_confirms() {
+        batch.setFee(new BigDecimal("500.00"));
+        PaymentInput input = new PaymentInput("Test Member", "4242424242424242", "12", "2030", "123");
+        when(batchRepository.findById(batch.getId())).thenReturn(Optional.of(batch));
+        when(userService.findByEmail("member@example.com")).thenReturn(learner);
+        when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
+        when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(0L);
+        when(paymentService.priceForUser(learner, new BigDecimal("500.00"))).thenReturn(new BigDecimal("500.00"));
+        when(paymentService.charge(learner, PaymentPurpose.BATCH_BOOKING, batch.getId(),
+                new BigDecimal("500.00"), input))
+                .thenReturn(Payment.builder().status(PaymentStatus.SUCCEEDED).build());
+        when(bookingRepository.save(any())).thenAnswer(inv -> {
+            Booking b = inv.getArgument(0);
+            b.setId(UUID.randomUUID());
+            return b;
+        });
+
+        var result = bookingService.bookSeat(batch.getId(), "member@example.com", input);
+
+        assertThat(result.status()).isEqualTo("CONFIRMED");
+        assertThat(result.amountPaid()).isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    void bookSeat_paidBatch_declinedPayment_throws() {
+        batch.setFee(new BigDecimal("500.00"));
+        PaymentInput input = new PaymentInput("Test Member", "4000000000000002", "12", "2030", "123");
+        when(batchRepository.findById(batch.getId())).thenReturn(Optional.of(batch));
+        when(userService.findByEmail("member@example.com")).thenReturn(learner);
+        when(bookingRepository.findByBatchAndUser(batch, learner)).thenReturn(List.of());
+        when(bookingRepository.countByBatchAndStatus(batch, BookingStatus.CONFIRMED)).thenReturn(0L);
+        when(paymentService.priceForUser(learner, new BigDecimal("500.00"))).thenReturn(new BigDecimal("500.00"));
+        when(paymentService.charge(learner, PaymentPurpose.BATCH_BOOKING, batch.getId(),
+                new BigDecimal("500.00"), input))
+                .thenReturn(Payment.builder().status(PaymentStatus.FAILED).failureReason("Your card was declined").build());
+
+        assertThatThrownBy(() -> bookingService.bookSeat(batch.getId(), "member@example.com", input))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("declined");
     }
 
     @Test

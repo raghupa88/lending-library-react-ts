@@ -1,0 +1,5 @@
+package com.lendinglibrary.domain.enums;
+
+public enum PaymentPurpose {
+    COURSE_ENROLLMENT, BATCH_BOOKING
+}

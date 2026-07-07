@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle, ClipboardCheck, MapPin, Users } from "lucide-react";
 import {
@@ -8,7 +9,7 @@ import {
   type Lesson,
 } from "../../features/learn/queries";
 import { useCourseTestsQuery } from "../../features/learn/tests-queries";
-import { useCourseBatchesQuery, useBookSeat } from "../../features/learn/batches-queries";
+import { useCourseBatchesQuery, useBookSeat, type BatchForLearner } from "../../features/learn/batches-queries";
 import { TRACK_LABELS, LEVEL_LABELS } from "../../features/learn/labels";
 import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
@@ -19,7 +20,11 @@ import { ProgressBar } from "../../components/ui/progress-bar";
 import { useToast } from "../../components/ui/toast";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError } from "../../lib/api";
+import type { PaymentInput } from "../../lib/payment";
+import { CheckoutDialog } from "../../components/payments/CheckoutDialog";
 import { cn } from "../../lib/cn";
+
+type CheckoutState = { type: "enroll" } | { type: "batch"; batch: BatchForLearner } | null;
 
 const KIND_ICONS: Record<Lesson["kind"], typeof FileText> = {
   ARTICLE: FileText,
@@ -45,24 +50,32 @@ export default function LearnDetail() {
   const { data: tests } = useCourseTestsQuery(course?.id, alreadyEnrolled);
   const { data: batches } = useCourseBatchesQuery(course?.id);
   const bookSeat = useBookSeat();
+  const [checkout, setCheckout] = useState<CheckoutState>(null);
 
-  const handleBookSeat = (batchId: string) => {
+  const handleBookSeat = (batch: BatchForLearner) => {
     if (!user) {
       navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
       return;
     }
-    bookSeat.mutate(batchId, {
-      onSuccess: (booking) =>
-        toast(
-          "success",
-          booking.status === "CONFIRMED" ? "Seat booked!" : "You've been added to the waitlist",
-          <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
-            View on your dashboard →
-          </Link>,
-        ),
-      onError: (err) =>
-        toast("error", err instanceof ApiError ? err.message : "Couldn't book a seat"),
-    });
+    if (batch.fee > 0) {
+      setCheckout({ type: "batch", batch });
+      return;
+    }
+    bookSeat.mutate(
+      { batchId: batch.id },
+      {
+        onSuccess: (booking) =>
+          toast(
+            "success",
+            booking.status === "CONFIRMED" ? "Seat booked!" : "You've been added to the waitlist",
+            <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+              View on your dashboard →
+            </Link>,
+          ),
+        onError: (err) =>
+          toast("error", err instanceof ApiError ? err.message : "Couldn't book a seat"),
+      },
+    );
   };
 
   const handleEnroll = () => {
@@ -70,19 +83,50 @@ export default function LearnDetail() {
       navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
       return;
     }
-    enroll.mutate(course.id, {
-      onSuccess: () =>
-        toast(
-          "success",
-          `Enrolled in "${course.title}"!`,
-          <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
-            View on your dashboard →
-          </Link>,
-        ),
-      onError: (err) => {
-        toast("error", err instanceof ApiError ? err.message : "Couldn't enroll in this course");
+    if (course.price > 0) {
+      setCheckout({ type: "enroll" });
+      return;
+    }
+    enroll.mutate(
+      { courseId: course.id },
+      {
+        onSuccess: () =>
+          toast(
+            "success",
+            `Enrolled in "${course.title}"!`,
+            <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+              View on your dashboard →
+            </Link>,
+          ),
+        onError: (err) => {
+          toast("error", err instanceof ApiError ? err.message : "Couldn't enroll in this course");
+        },
       },
-    });
+    );
+  };
+
+  const handleCheckoutSubmit = async (payment: PaymentInput) => {
+    if (!checkout || !course) return;
+    if (checkout.type === "enroll") {
+      const enrollment = await enroll.mutateAsync({ courseId: course.id, payment });
+      toast(
+        "success",
+        `Enrolled in "${course.title}"! Charged ₹${enrollment.amountPaid.toFixed(2)}`,
+        <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+          View on your dashboard →
+        </Link>,
+      );
+    } else {
+      const booking = await bookSeat.mutateAsync({ batchId: checkout.batch.id, payment });
+      toast(
+        "success",
+        `Seat booked! Charged ₹${booking.amountPaid.toFixed(2)}`,
+        <Link to="/dashboard" className="font-medium text-accent hover:text-accent-hover">
+          View on your dashboard →
+        </Link>,
+      );
+    }
+    setCheckout(null);
   };
 
   return (
@@ -149,7 +193,11 @@ export default function LearnDetail() {
             ) : (
               <>
                 <Button size="lg" disabled={enroll.isPending} onClick={handleEnroll}>
-                  {enroll.isPending ? "Enrolling…" : "Enroll for free"}
+                  {enroll.isPending
+                    ? "Enrolling…"
+                    : course.price > 0
+                      ? `Enroll — ₹${course.price.toFixed(2)}`
+                      : "Enroll for free"}
                 </Button>
                 {!user && (
                   <p className="mt-2 text-sm text-muted">
@@ -269,20 +317,28 @@ export default function LearnDetail() {
                           <Users className="size-4" aria-hidden="true" />
                           {b.seatsAvailable > 0
                             ? `${b.seatsAvailable} seat${b.seatsAvailable === 1 ? "" : "s"} available`
-                            : "Full — bookings join the waitlist"}
-                          {b.fee > 0 && ` · ₹${b.fee.toFixed(2)}`}
+                            : b.fee > 0
+                              ? "Full"
+                              : "Full — bookings join the waitlist"}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {b.myBookingStatus === "CONFIRMED" && <Badge variant="success">You're booked</Badge>}
                         {b.myBookingStatus === "WAITLISTED" && <Badge variant="outline">Waitlisted</Badge>}
-                        {!b.myBookingStatus && (
+                        {!b.myBookingStatus && b.fee > 0 && b.seatsAvailable === 0 && (
+                          <Badge variant="outline">Full</Badge>
+                        )}
+                        {!b.myBookingStatus && (b.fee === 0 || b.seatsAvailable > 0) && (
                           <Button
                             size="sm"
                             disabled={bookSeat.isPending}
-                            onClick={() => handleBookSeat(b.id)}
+                            onClick={() => handleBookSeat(b)}
                           >
-                            {b.seatsAvailable > 0 ? "Book a seat" : "Join waitlist"}
+                            {b.seatsAvailable > 0
+                              ? b.fee > 0
+                                ? `Book a seat — ₹${b.fee.toFixed(2)}`
+                                : "Book a seat"
+                              : "Join waitlist"}
                           </Button>
                         )}
                       </div>
@@ -293,6 +349,15 @@ export default function LearnDetail() {
             </>
           )}
         </article>
+      )}
+
+      {checkout && course && (
+        <CheckoutDialog
+          title={checkout.type === "enroll" ? `Enroll in ${course.title}` : "Book a seat"}
+          amount={checkout.type === "enroll" ? course.price : checkout.batch.fee}
+          onClose={() => setCheckout(null)}
+          onSubmit={handleCheckoutSubmit}
+        />
       )}
     </div>
   );
