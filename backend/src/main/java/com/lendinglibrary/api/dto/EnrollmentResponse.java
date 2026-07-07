@@ -11,12 +11,17 @@ public record EnrollmentResponse(
         String courseSlug,
         String courseTitle,
         String status,
-        LocalDateTime enrolledAt
+        LocalDateTime enrolledAt,
+        long totalLessons,
+        long completedLessons,
+        UUID nextLessonId
 ) {
-    public static EnrollmentResponse from(Enrollment e) {
+    public static EnrollmentResponse from(
+            Enrollment e, long totalLessons, long completedLessons, UUID nextLessonId) {
         return new EnrollmentResponse(
                 e.getId(), e.getCourse().getId(), e.getCourse().getSlug(),
-                e.getCourse().getTitle(), e.getStatus().name(), e.getEnrolledAt()
+                e.getCourse().getTitle(), e.getStatus().name(), e.getEnrolledAt(),
+                totalLessons, completedLessons, nextLessonId
         );
     }
 }

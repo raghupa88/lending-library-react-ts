@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, GraduationCap, CheckCircle2, FileText, Video, FileStack, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle } from "lucide-react";
 import {
   useCourseQuery,
   useEnrollInCourse,
   useMyEnrollmentsQuery,
+  useCourseProgressQuery,
   type Lesson,
 } from "../../features/learn/queries";
 import { TRACK_LABELS, LEVEL_LABELS } from "../../features/learn/labels";
@@ -11,9 +12,11 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
+import { ProgressBar } from "../../components/ui/progress-bar";
 import { useToast } from "../../components/ui/toast";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError } from "../../lib/api";
+import { cn } from "../../lib/cn";
 
 const KIND_ICONS: Record<Lesson["kind"], typeof FileText> = {
   ARTICLE: FileText,
@@ -32,7 +35,10 @@ export default function LearnDetail() {
   const enroll = useEnrollInCourse();
   const { data: enrollments } = useMyEnrollmentsQuery(Boolean(user));
 
-  const alreadyEnrolled = Boolean(enrollments?.some((e) => e.courseSlug === slug));
+  const enrollment = enrollments?.find((e) => e.courseSlug === slug);
+  const alreadyEnrolled = Boolean(enrollment);
+  const { data: progress } = useCourseProgressQuery(course?.id, alreadyEnrolled);
+  const completedIds = new Set(progress?.completedLessonIds ?? []);
 
   const handleEnroll = () => {
     if (!user || !course) {
@@ -93,22 +99,39 @@ export default function LearnDetail() {
           <p className="mt-3 max-w-prose leading-relaxed text-muted">{course.summary}</p>
 
           <div className="mt-6">
-            <Button size="lg" disabled={alreadyEnrolled || enroll.isPending} onClick={handleEnroll}>
-              {alreadyEnrolled ? (
-                <>
-                  <CheckCircle2 aria-hidden="true" />
-                  Already enrolled
-                </>
-              ) : enroll.isPending ? (
-                "Enrolling…"
-              ) : (
-                "Enroll for free"
-              )}
-            </Button>
-            {!user && (
-              <p className="mt-2 text-sm text-muted">
-                You'll be asked to sign in before enrolling.
-              </p>
+            {alreadyEnrolled ? (
+              <>
+                {enrollment && (
+                  <ProgressBar
+                    className="mb-4 max-w-sm"
+                    label="Course progress"
+                    value={enrollment.completedLessons}
+                    max={enrollment.totalLessons}
+                  />
+                )}
+                <Link
+                  to={`/learn/${slug}/lesson/${
+                    enrollment?.nextLessonId ?? course.modules[0]?.lessons[0]?.id ?? ""
+                  }`}
+                  className={cn(
+                    "inline-flex h-11 items-center gap-2 rounded-(--radius-control) bg-accent px-5 text-sm font-medium text-accent-foreground shadow-soft transition-colors hover:bg-accent-hover",
+                  )}
+                >
+                  {enrollment?.nextLessonId ? "Continue learning" : "Review course"}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Button size="lg" disabled={enroll.isPending} onClick={handleEnroll}>
+                  {enroll.isPending ? "Enrolling…" : "Enroll for free"}
+                </Button>
+                {!user && (
+                  <p className="mt-2 text-sm text-muted">
+                    You'll be asked to sign in before enrolling.
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -123,11 +146,34 @@ export default function LearnDetail() {
                 <ul className="mt-3 space-y-2">
                   {module.lessons.map((lesson) => {
                     const Icon = KIND_ICONS[lesson.kind];
-                    return (
-                      <li key={lesson.id} className="flex items-center gap-2.5 text-sm">
-                        <Icon className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                    const done = completedIds.has(lesson.id);
+                    const content = (
+                      <>
+                        {alreadyEnrolled ? (
+                          done ? (
+                            <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden="true" />
+                          ) : (
+                            <Circle className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                          )
+                        ) : (
+                          <Icon className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                        )}
                         <span className="flex-1">{lesson.title}</span>
                         <span className="text-xs text-muted">{lesson.estMinutes} min</span>
+                      </>
+                    );
+                    return (
+                      <li key={lesson.id} className="text-sm">
+                        {alreadyEnrolled ? (
+                          <Link
+                            to={`/learn/${slug}/lesson/${lesson.id}`}
+                            className="flex items-center gap-2.5 rounded-(--radius-control) py-1 hover:text-accent"
+                          >
+                            {content}
+                          </Link>
+                        ) : (
+                          <div className="flex items-center gap-2.5">{content}</div>
+                        )}
                       </li>
                     );
                   })}

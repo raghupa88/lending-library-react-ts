@@ -23,6 +23,8 @@ import {
   MOCK_COURSE_DETAIL,
   MOCK_ENROLLMENTS_EMPTY,
   MOCK_ENROLLMENT_CREATED,
+  MOCK_COURSE_PROGRESS_EMPTY,
+  MOCK_COURSE_PROGRESS_PARTIAL,
   MOCK_ADMIN_COURSES,
   MOCK_COURSE_CREATED,
   MOCK_MODULE_CREATED,
@@ -150,12 +152,27 @@ export async function setupLearnApiMocks(
     detail = MOCK_COURSE_DETAIL,
     enrollments = MOCK_ENROLLMENTS_EMPTY,
     enroll = MOCK_ENROLLMENT_CREATED,
-  }: { courses?: unknown; detail?: unknown; enrollments?: unknown; enroll?: unknown } = {},
+    progress = MOCK_COURSE_PROGRESS_EMPTY,
+    complete = MOCK_COURSE_PROGRESS_PARTIAL,
+  }: {
+    courses?: unknown;
+    detail?: unknown;
+    enrollments?: unknown;
+    enroll?: unknown;
+    progress?: unknown;
+    complete?: unknown;
+  } = {},
 ) {
   await page.route(`${API_BASE}/learn/courses?*`, (route) => route.fulfill(fulfill(courses)));
   await page.route(`${API_BASE}/learn/courses`, (route) => route.fulfill(fulfill(courses)));
   await page.route(`${API_BASE}/learn/courses/*/enroll`, (route) =>
     route.fulfill(fulfill(enroll)),
+  );
+  await page.route(`${API_BASE}/learn/courses/*/progress`, (route) =>
+    route.fulfill(fulfill(progress)),
+  );
+  await page.route(`${API_BASE}/learn/lessons/*/complete`, (route) =>
+    route.fulfill(fulfill(complete)),
   );
   await page.route(`${API_BASE}/learn/courses/*`, (route) => route.fulfill(fulfill(detail)));
   await page.route(`${API_BASE}/learn/me/enrollments`, (route) =>

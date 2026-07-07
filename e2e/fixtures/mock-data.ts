@@ -447,6 +447,9 @@ export const MOCK_ENROLLMENT_CREATED = {
     courseTitle: 'Money Foundations',
     status: 'ACTIVE',
     enrolledAt: daysFromNow(0),
+    totalLessons: 3,
+    completedLessons: 0,
+    nextLessonId: 'lesson-1',
   },
 };
 
@@ -455,9 +458,59 @@ export const MOCK_ENROLLMENTS = {
   data: [MOCK_ENROLLMENT_CREATED.data],
 };
 
+export const MOCK_ENROLLMENTS_IN_PROGRESS = {
+  success: true,
+  data: [{ ...MOCK_ENROLLMENT_CREATED.data, completedLessons: 1, nextLessonId: 'lesson-2' }],
+};
+
+export const MOCK_ENROLLMENTS_COMPLETE = {
+  success: true,
+  data: [{ ...MOCK_ENROLLMENT_CREATED.data, completedLessons: 3, nextLessonId: null }],
+};
+
 export const MOCK_ENROLL_ALREADY_FAILURE = {
   success: false,
   error: "You're already enrolled in this course",
+};
+
+// --- Learn progress (backend CourseProgressResponse) ---
+
+export const MOCK_COURSE_PROGRESS_EMPTY = {
+  success: true,
+  data: {
+    courseId: 'course-1',
+    totalLessons: 3,
+    completedLessons: 0,
+    completedLessonIds: [],
+    nextLessonId: 'lesson-1',
+  },
+};
+
+export const MOCK_COURSE_PROGRESS_PARTIAL = {
+  success: true,
+  data: {
+    courseId: 'course-1',
+    totalLessons: 3,
+    completedLessons: 1,
+    completedLessonIds: ['lesson-1'],
+    nextLessonId: 'lesson-2',
+  },
+};
+
+export const MOCK_COURSE_PROGRESS_COMPLETE = {
+  success: true,
+  data: {
+    courseId: 'course-1',
+    totalLessons: 3,
+    completedLessons: 3,
+    completedLessonIds: ['lesson-1', 'lesson-2', 'lesson-3'],
+    nextLessonId: null,
+  },
+};
+
+export const MOCK_PROGRESS_NOT_ENROLLED_FAILURE = {
+  success: false,
+  error: 'You must enroll in this course first',
 };
 
 export const MOCK_ADMIN_COURSES = {

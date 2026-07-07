@@ -60,6 +60,18 @@ export interface Enrollment {
   courseTitle: string;
   status: EnrollmentStatus;
   enrolledAt: string;
+  totalLessons: number;
+  completedLessons: number;
+  nextLessonId: string | null;
+}
+
+/** Matches backend CourseProgressResponse. */
+export interface CourseProgress {
+  courseId: string;
+  totalLessons: number;
+  completedLessons: number;
+  completedLessonIds: string[];
+  nextLessonId: string | null;
 }
 
 export interface PagedCourses {
@@ -119,6 +131,26 @@ export function useEnrollInCourse() {
     mutationFn: (courseId: string) =>
       api.post<Enrollment>(`/learn/courses/${courseId}/enroll`),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["learn", "enrollments"] });
+    },
+  });
+}
+
+export function useCourseProgressQuery(courseId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["learn", "progress", courseId],
+    queryFn: () => api.get<CourseProgress>(`/learn/courses/${courseId}/progress`),
+    enabled: Boolean(courseId) && enabled,
+  });
+}
+
+export function useCompleteLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (lessonId: string) =>
+      api.post<CourseProgress>(`/learn/lessons/${lessonId}/complete`),
+    onSuccess: (progress) => {
+      queryClient.setQueryData(["learn", "progress", progress.courseId], progress);
       queryClient.invalidateQueries({ queryKey: ["learn", "enrollments"] });
     },
   });

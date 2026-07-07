@@ -18,6 +18,7 @@ import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button, buttonVariants } from "../../components/ui/button";
+import { ProgressBar } from "../../components/ui/progress-bar";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Tabs, TabPanel } from "../../components/ui/tabs";
@@ -211,23 +212,38 @@ export default function Dashboard() {
                 }
               />
             ) : (
-              <ul className="divide-y divide-border rounded-(--radius-card) border border-border bg-surface">
+              <ul className="space-y-3">
                 {enrollments.map((enrollment) => (
-                  <li key={enrollment.id} className="flex items-center gap-4 p-4">
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        to={`/learn/${enrollment.courseSlug}`}
-                        className="font-medium hover:text-accent"
-                      >
-                        {enrollment.courseTitle}
-                      </Link>
-                      <div className="text-sm text-muted">
-                        Enrolled {formatDate(enrollment.enrolledAt)}
+                  <li key={enrollment.id}>
+                    <Card className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to={`/learn/${enrollment.courseSlug}`}
+                            className="font-medium hover:text-accent"
+                          >
+                            {enrollment.courseTitle}
+                          </Link>
+                          <div className="text-sm text-muted">
+                            Enrolled {formatDate(enrollment.enrolledAt)}
+                          </div>
+                        </div>
+                        <Link
+                          to={`/learn/${enrollment.courseSlug}/lesson/${
+                            enrollment.nextLessonId ?? ""
+                          }`}
+                          className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "shrink-0")}
+                        >
+                          {enrollment.nextLessonId ? "Continue" : "Review"}
+                        </Link>
                       </div>
-                    </div>
-                    <span className="text-xs text-muted capitalize">
-                      {enrollment.status.toLowerCase()}
-                    </span>
+                      <ProgressBar
+                        className="mt-3"
+                        label={`${enrollment.courseTitle} progress`}
+                        value={enrollment.completedLessons}
+                        max={enrollment.totalLessons}
+                      />
+                    </Card>
                   </li>
                 ))}
               </ul>

@@ -1,6 +1,8 @@
 package com.lendinglibrary.service;
 
+import com.lendinglibrary.api.dto.CourseProgressResponse;
 import com.lendinglibrary.application.service.EnrollmentService;
+import com.lendinglibrary.application.service.LessonProgressService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.Course;
 import com.lendinglibrary.domain.entity.Enrollment;
@@ -23,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +44,7 @@ class EnrollmentServiceTest {
     @Mock CourseRepository courseRepository;
     @Mock UserService userService;
     @Mock DomainEventPublisher events;
+    @Mock LessonProgressService lessonProgressService;
     @InjectMocks EnrollmentService enrollmentService;
 
     private User user;
@@ -64,10 +68,13 @@ class EnrollmentServiceTest {
             e.setId(UUID.randomUUID());
             return e;
         });
+        when(lessonProgressService.buildProgress(eq(publishedFreeCourse), any())).thenReturn(
+                new CourseProgressResponse(publishedFreeCourse.getId(), 6, 0, List.of(), UUID.randomUUID()));
 
         var result = enrollmentService.enroll(publishedFreeCourse.getId(), "member@example.com");
 
         assertThat(result.courseTitle()).isEqualTo("Money Foundations");
+        assertThat(result.totalLessons()).isEqualTo(6);
         verify(events).publish(eq(Topics.COURSE_EVENTS), eq("course.enrolled"), any(), any(Map.class));
     }
 
@@ -113,5 +120,23 @@ class EnrollmentServiceTest {
 
         assertThatThrownBy(() -> enrollmentService.enroll(id, "member@example.com"))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void myEnrollments_attachesProgressSummaryPerEnrollment() {
+        Enrollment enrollment = Enrollment.builder().id(UUID.randomUUID())
+                .user(user).course(publishedFreeCourse).build();
+        UUID nextLessonId = UUID.randomUUID();
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(enrollmentRepository.findByUserOrderByEnrolledAtDesc(user)).thenReturn(List.of(enrollment));
+        when(lessonProgressService.buildProgress(publishedFreeCourse, enrollment)).thenReturn(
+                new CourseProgressResponse(publishedFreeCourse.getId(), 6, 2, List.of(), nextLessonId));
+
+        var result = enrollmentService.myEnrollments("member@example.com");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).totalLessons()).isEqualTo(6);
+        assertThat(result.get(0).completedLessons()).isEqualTo(2);
+        assertThat(result.get(0).nextLessonId()).isEqualTo(nextLessonId);
     }
 }
