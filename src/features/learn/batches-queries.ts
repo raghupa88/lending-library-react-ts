@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import type { PaymentInput } from "../../lib/payment";
 
 export type BookingStatus = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
 
@@ -27,6 +28,7 @@ export interface Booking {
   endsOn: string;
   status: BookingStatus;
   bookedAt: string;
+  amountPaid: number;
 }
 
 export function useCourseBatchesQuery(courseId: string | undefined) {
@@ -48,7 +50,8 @@ export function useMyBookingsQuery(enabled = true) {
 export function useBookSeat() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (batchId: string) => api.post<Booking>(`/learn/batches/${batchId}/book`),
+    mutationFn: ({ batchId, payment }: { batchId: string; payment?: PaymentInput }) =>
+      api.post<Booking>(`/learn/batches/${batchId}/book`, payment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["learn", "batches"] });
       queryClient.invalidateQueries({ queryKey: ["learn", "bookings"] });

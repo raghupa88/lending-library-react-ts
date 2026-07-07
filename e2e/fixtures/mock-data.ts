@@ -450,6 +450,7 @@ export const MOCK_ENROLLMENT_CREATED = {
     totalLessons: 3,
     completedLessons: 0,
     nextLessonId: 'lesson-1',
+    amountPaid: 0,
   },
 };
 
@@ -471,6 +472,47 @@ export const MOCK_ENROLLMENTS_COMPLETE = {
 export const MOCK_ENROLL_ALREADY_FAILURE = {
   success: false,
   error: "You're already enrolled in this course",
+};
+
+// --- Payments (L5: paid enrollment/batch fees) ---
+
+export const MOCK_COURSE_SUMMARY_PAID = {
+  ...MOCK_COURSE_SUMMARY,
+  id: 'course-paid-1',
+  slug: 'paid-course',
+  title: 'Advanced Derivatives',
+  price: 499,
+};
+
+export const MOCK_COURSE_DETAIL_PAID = {
+  success: true,
+  data: { ...MOCK_COURSE_SUMMARY_PAID, modules: [] },
+};
+
+export const MOCK_ENROLLMENT_CREATED_PAID = {
+  success: true,
+  data: {
+    id: 'enrollment-paid-1',
+    courseId: 'course-paid-1',
+    courseSlug: 'paid-course',
+    courseTitle: 'Advanced Derivatives',
+    status: 'ACTIVE',
+    enrolledAt: daysFromNow(0),
+    totalLessons: 0,
+    completedLessons: 0,
+    nextLessonId: null,
+    amountPaid: 499,
+  },
+};
+
+export const MOCK_PAYMENT_REQUIRED_FAILURE = {
+  success: false,
+  error: 'Payment details are required for this course',
+};
+
+export const MOCK_PAYMENT_DECLINED_FAILURE = {
+  success: false,
+  error: 'Your card was declined — please try a different card',
 };
 
 // --- Learn progress (backend CourseProgressResponse) ---
@@ -822,6 +864,7 @@ export const MOCK_BOOKING_CONFIRMED = {
     endsOn: '2026-08-02',
     status: 'CONFIRMED',
     bookedAt: daysFromNow(0),
+    amountPaid: 0,
   },
 };
 
@@ -833,6 +876,35 @@ export const MOCK_BOOKING_WAITLISTED = {
 export const MOCK_MY_BOOKINGS_EMPTY = { success: true, data: [] };
 export const MOCK_MY_BOOKINGS = { success: true, data: [MOCK_BOOKING_CONFIRMED.data] };
 export const MOCK_CANCEL_BOOKING_SUCCESS = { success: true, data: null };
+
+export const MOCK_BATCH_FOR_LEARNER_PAID = {
+  ...MOCK_BATCH_FOR_LEARNER,
+  id: 'batch-paid-1',
+  fee: 350,
+  seatsAvailable: 1,
+};
+
+export const MOCK_BATCHES_FOR_LEARNER_PAID = { success: true, data: [MOCK_BATCH_FOR_LEARNER_PAID] };
+
+export const MOCK_BATCHES_FOR_LEARNER_PAID_FULL = {
+  success: true,
+  data: [{ ...MOCK_BATCH_FOR_LEARNER_PAID, seatsAvailable: 0 }],
+};
+
+export const MOCK_BOOKING_CONFIRMED_PAID = {
+  success: true,
+  data: { ...MOCK_BOOKING_CONFIRMED.data, id: 'booking-paid-1', batchId: 'batch-paid-1', amountPaid: 350 },
+};
+
+export const MOCK_PAYMENT_REQUIRED_BATCH_FAILURE = {
+  success: false,
+  error: 'Payment details are required for this batch',
+};
+
+export const MOCK_PAYMENT_DECLINED_BATCH_FAILURE = {
+  success: false,
+  error: 'Your card was declined — please try a different card',
+};
 
 export const MOCK_ADMIN_BATCHES = {
   success: true,

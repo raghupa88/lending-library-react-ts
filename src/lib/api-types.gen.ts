@@ -289,7 +289,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Enroll in a free course */
+        /** Enroll in a course; paid courses require a PaymentInput body */
         post: operations["enroll"];
         delete?: never;
         options?: never;
@@ -306,7 +306,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Book a seat in a batch (waitlisted automatically once full) */
+        /** Book a seat in a batch (waitlisted automatically once full); paid batches require a PaymentInput body */
         post: operations["bookSeat"];
         delete?: never;
         options?: never;
@@ -1181,6 +1181,13 @@ export interface components {
             /** Format: uuid */
             nextLessonId?: string;
         };
+        PaymentInput: {
+            cardholderName?: string;
+            cardNumber?: string;
+            expiryMonth?: string;
+            expiryYear?: string;
+            cvc?: string;
+        };
         ApiResponseEnrollmentResponse: {
             success?: boolean;
             data?: components["schemas"]["EnrollmentResponse"];
@@ -1203,6 +1210,7 @@ export interface components {
             completedLessons?: number;
             /** Format: uuid */
             nextLessonId?: string;
+            amountPaid?: number;
         };
         ApiResponseBookingResponse: {
             success?: boolean;
@@ -1224,6 +1232,7 @@ export interface components {
             status?: string;
             /** Format: date-time */
             bookedAt?: string;
+            amountPaid?: number;
         };
         AnswerInput: {
             /** Format: uuid */
@@ -2237,7 +2246,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PaymentInput"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -2259,7 +2272,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PaymentInput"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

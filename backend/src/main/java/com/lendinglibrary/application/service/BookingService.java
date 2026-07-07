@@ -1,10 +1,14 @@
 package com.lendinglibrary.application.service;
 
 import com.lendinglibrary.api.dto.BookingResponse;
+import com.lendinglibrary.api.dto.PaymentInput;
 import com.lendinglibrary.domain.entity.Batch;
 import com.lendinglibrary.domain.entity.Booking;
+import com.lendinglibrary.domain.entity.Payment;
 import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.BookingStatus;
+import com.lendinglibrary.domain.enums.PaymentPurpose;
+import com.lendinglibrary.domain.enums.PaymentStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
@@ -30,18 +34,14 @@ public class BookingService {
     private final BatchRepository batchRepository;
     private final UserService userService;
     private final DomainEventPublisher events;
+    private final PaymentService paymentService;
 
     @Transactional
-    public BookingResponse bookSeat(UUID batchId, String email) {
+    public BookingResponse bookSeat(UUID batchId, String email, PaymentInput paymentInput) {
         Batch batch = batchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Batch not found: " + batchId));
         if (batch.getStatus() != BatchStatus.PUBLISHED) {
             throw new BusinessException("This batch isn't open for booking");
-        }
-        // L4 scope: free batches only, same as L1's free-course-only enrollment —
-        // paid batches ride the same deferred payments phase (docs/plans/learning-platform.md, L5).
-        if (batch.getFee().compareTo(BigDecimal.ZERO) > 0) {
-            throw new BusinessException("Paid batches aren't available for booking yet — check back soon");
         }
 
         User user = userService.findByEmail(email);
@@ -55,8 +55,26 @@ public class BookingService {
         BookingStatus status = confirmedCount < batch.getCapacity()
                 ? BookingStatus.CONFIRMED : BookingStatus.WAITLISTED;
 
+        BigDecimal amountDue = paymentService.priceForUser(user, batch.getFee());
+        if (amountDue.compareTo(BigDecimal.ZERO) > 0) {
+            // Paid batches can't be waitlisted yet — charging for a seat that
+            // isn't guaranteed would need a hold/refund flow this phase
+            // doesn't build (docs/adr/ADR-013-learn-l5-scope.md).
+            if (status == BookingStatus.WAITLISTED) {
+                throw new BusinessException("This batch is full — paid batches can't be waitlisted yet");
+            }
+            if (paymentInput == null) {
+                throw new BusinessException("Payment details are required for this batch");
+            }
+            Payment payment = paymentService.charge(
+                    user, PaymentPurpose.BATCH_BOOKING, batch.getId(), amountDue, paymentInput);
+            if (payment.getStatus() != PaymentStatus.SUCCEEDED) {
+                throw new BusinessException(payment.getFailureReason());
+            }
+        }
+
         Booking booking = bookingRepository.save(Booking.builder()
-                .batch(batch).user(user).status(status).bookedAt(LocalDateTime.now()).build());
+                .batch(batch).user(user).status(status).bookedAt(LocalDateTime.now()).amountPaid(amountDue).build());
 
         if (status == BookingStatus.CONFIRMED) {
             publishBatchBooked(booking, user);
