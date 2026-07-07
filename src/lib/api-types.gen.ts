@@ -178,6 +178,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/lessons/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a lesson complete for the current user */
+        post: operations["completeLesson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/courses/{id}/enroll": {
         parameters: {
             query?: never;
@@ -451,6 +468,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/courses/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's lesson-completion progress for an enrolled course */
+        get: operations["getProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/books": {
         parameters: {
             query?: never;
@@ -713,6 +747,23 @@ export interface components {
             /** Format: int32 */
             daysToKeep?: number;
         };
+        ApiResponseCourseProgressResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CourseProgressResponse"];
+            message?: string;
+            error?: string;
+        };
+        CourseProgressResponse: {
+            /** Format: uuid */
+            courseId?: string;
+            /** Format: int64 */
+            totalLessons?: number;
+            /** Format: int64 */
+            completedLessons?: number;
+            completedLessonIds?: string[];
+            /** Format: uuid */
+            nextLessonId?: string;
+        };
         ApiResponseEnrollmentResponse: {
             success?: boolean;
             data?: components["schemas"]["EnrollmentResponse"];
@@ -729,6 +780,12 @@ export interface components {
             status?: string;
             /** Format: date-time */
             enrolledAt?: string;
+            /** Format: int64 */
+            totalLessons?: number;
+            /** Format: int64 */
+            completedLessons?: number;
+            /** Format: uuid */
+            nextLessonId?: string;
         };
         RegisterRequest: {
             email: string;
@@ -1293,6 +1350,28 @@ export interface operations {
             };
         };
     };
+    completeLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseProgressResponse"];
+                };
+            };
+        };
+    };
     enroll: {
         parameters: {
             query?: never;
@@ -1685,6 +1764,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCourseDetailResponse"];
+                };
+            };
+        };
+    };
+    getProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCourseProgressResponse"];
                 };
             };
         };

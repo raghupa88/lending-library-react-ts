@@ -29,11 +29,13 @@ public class EnrollmentService {
     private final CourseRepository courseRepository;
     private final UserService userService;
     private final DomainEventPublisher events;
+    private final LessonProgressService lessonProgressService;
 
     public List<EnrollmentResponse> myEnrollments(String email) {
         User user = userService.findByEmail(email);
         return enrollmentRepository.findByUserOrderByEnrolledAtDesc(user).stream()
-                .map(EnrollmentResponse::from).toList();
+                .map(this::toResponseWithProgress)
+                .toList();
     }
 
     @Transactional
@@ -65,6 +67,12 @@ public class EnrollmentService {
                 "courseTitle", course.getTitle()
         ));
 
-        return EnrollmentResponse.from(enrollment);
+        return toResponseWithProgress(enrollment);
+    }
+
+    private EnrollmentResponse toResponseWithProgress(Enrollment enrollment) {
+        var progress = lessonProgressService.buildProgress(enrollment.getCourse(), enrollment);
+        return EnrollmentResponse.from(
+                enrollment, progress.totalLessons(), progress.completedLessons(), progress.nextLessonId());
     }
 }

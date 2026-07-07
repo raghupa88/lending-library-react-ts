@@ -13,6 +13,7 @@ import Books from "./pages/Books/Books";
 import BookDetail from "./pages/BookDetail/BookDetail";
 import Learn from "./pages/Learn/Learn";
 import LearnDetail from "./pages/LearnDetail/LearnDetail";
+import LessonPlayer from "./pages/LessonPlayer/LessonPlayer";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -70,6 +71,14 @@ export default function App() {
         <Route path="/books/:id" element={<BookDetail />} />
         <Route path="/learn" element={<Learn />} />
         <Route path="/learn/:slug" element={<LearnDetail />} />
+        <Route
+          path="/learn/:slug/lesson/:lessonId"
+          element={
+            <ProtectedRoute>
+              <LessonPlayer />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/plans" element={<Plans />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

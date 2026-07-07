@@ -1,12 +1,14 @@
 package com.lendinglibrary.api.controller;
 
 import com.lendinglibrary.api.dto.CourseDetailResponse;
+import com.lendinglibrary.api.dto.CourseProgressResponse;
 import com.lendinglibrary.api.dto.CourseSummaryResponse;
 import com.lendinglibrary.api.dto.EnrollmentResponse;
 import com.lendinglibrary.api.envelope.ApiResponse;
 import com.lendinglibrary.api.envelope.PagedResponse;
 import com.lendinglibrary.application.service.CourseService;
 import com.lendinglibrary.application.service.EnrollmentService;
+import com.lendinglibrary.application.service.LessonProgressService;
 import com.lendinglibrary.domain.enums.CourseLevel;
 import com.lendinglibrary.domain.enums.CourseTrack;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +32,7 @@ public class LearnController {
 
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
+    private final LessonProgressService lessonProgressService;
 
     @GetMapping("/courses")
     @Operation(summary = "Browse published courses with optional filters")
@@ -65,5 +68,22 @@ public class LearnController {
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> myEnrollments(
             @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(ApiResponse.ok(enrollmentService.myEnrollments(user.getUsername())));
+    }
+
+    @GetMapping("/courses/{id}/progress")
+    @Operation(summary = "Get the current user's lesson-completion progress for an enrolled course")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<CourseProgressResponse>> getProgress(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(lessonProgressService.getProgress(id, user.getUsername())));
+    }
+
+    @PostMapping("/lessons/{id}/complete")
+    @Operation(summary = "Mark a lesson complete for the current user")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<CourseProgressResponse>> completeLesson(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                lessonProgressService.completeLesson(id, user.getUsername()), "Lesson completed"));
     }
 }
