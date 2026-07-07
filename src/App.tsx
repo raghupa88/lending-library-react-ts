@@ -14,6 +14,8 @@ import BookDetail from "./pages/BookDetail/BookDetail";
 import Learn from "./pages/Learn/Learn";
 import LearnDetail from "./pages/LearnDetail/LearnDetail";
 import LessonPlayer from "./pages/LessonPlayer/LessonPlayer";
+import TestRunner from "./pages/TestRunner/TestRunner";
+import CertificateVerify from "./pages/CertificateVerify/CertificateVerify";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -79,6 +81,15 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/learn/:slug/test/:testId"
+          element={
+            <ProtectedRoute>
+              <TestRunner />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/certificates/:serial" element={<CertificateVerify />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

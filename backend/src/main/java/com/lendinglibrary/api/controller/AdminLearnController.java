@@ -3,6 +3,7 @@ package com.lendinglibrary.api.controller;
 import com.lendinglibrary.api.dto.*;
 import com.lendinglibrary.api.envelope.ApiResponse;
 import com.lendinglibrary.application.service.CourseService;
+import com.lendinglibrary.application.service.TestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class AdminLearnController {
 
     private final CourseService courseService;
+    private final TestService testService;
 
     @GetMapping("/courses")
     @Operation(summary = "List all courses, any status")
@@ -78,5 +80,33 @@ public class AdminLearnController {
             @PathVariable UUID moduleId, @Valid @RequestBody LessonRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(courseService.addLesson(moduleId, req), "Lesson added"));
+    }
+
+    @GetMapping("/courses/{id}/tests")
+    @Operation(summary = "List a course's tests, with question counts")
+    public ResponseEntity<ApiResponse<List<AdminTestSummaryResponse>>> listTests(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(testService.listForAdmin(id)));
+    }
+
+    @GetMapping("/tests/{id}")
+    @Operation(summary = "Get a test's full question bank, including the answer key")
+    public ResponseEntity<ApiResponse<AdminTestDetailResponse>> getTest(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(testService.getForAdmin(id)));
+    }
+
+    @PostMapping("/courses/{id}/tests")
+    @Operation(summary = "Create a test for a course")
+    public ResponseEntity<ApiResponse<AdminTestSummaryResponse>> createTest(
+            @PathVariable UUID id, @Valid @RequestBody TestRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(testService.createTest(id, req), "Test created"));
+    }
+
+    @PostMapping("/tests/{id}/questions")
+    @Operation(summary = "Append a question (with its options) to a test")
+    public ResponseEntity<ApiResponse<AdminQuestionResponse>> addQuestion(
+            @PathVariable UUID id, @Valid @RequestBody QuestionRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(testService.addQuestion(id, req), "Question added"));
     }
 }

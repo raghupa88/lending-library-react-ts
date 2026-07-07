@@ -29,6 +29,16 @@ import {
   MOCK_COURSE_CREATED,
   MOCK_MODULE_CREATED,
   MOCK_LESSON_CREATED,
+  MOCK_TESTS,
+  MOCK_TEST_FOR_LEARNER,
+  MOCK_ATTEMPT_START,
+  MOCK_ATTEMPT_RESULT_PASS,
+  MOCK_CERTIFICATES,
+  MOCK_CERTIFICATE_VERIFY,
+  MOCK_ADMIN_TESTS,
+  MOCK_ADMIN_TEST_DETAIL,
+  MOCK_TEST_CREATED,
+  MOCK_QUESTION_CREATED,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -180,6 +190,56 @@ export async function setupLearnApiMocks(
   );
 }
 
+export async function setupTestsApiMocks(
+  page: Page,
+  {
+    tests = MOCK_TESTS,
+    detail = MOCK_TEST_FOR_LEARNER,
+    start = MOCK_ATTEMPT_START,
+    submit = MOCK_ATTEMPT_RESULT_PASS,
+    certificates = MOCK_CERTIFICATES,
+    verify = MOCK_CERTIFICATE_VERIFY,
+  }: {
+    tests?: unknown;
+    detail?: unknown;
+    start?: unknown;
+    submit?: unknown;
+    certificates?: unknown;
+    verify?: unknown;
+  } = {},
+) {
+  await page.route(`${API_BASE}/learn/courses/*/tests`, (route) => route.fulfill(fulfill(tests)));
+  await page.route(`${API_BASE}/learn/tests/*/attempts`, (route) => route.fulfill(fulfill(start)));
+  await page.route(`${API_BASE}/learn/tests/*`, (route) => route.fulfill(fulfill(detail)));
+  await page.route(`${API_BASE}/learn/attempts/*/submit`, (route) => route.fulfill(fulfill(submit)));
+  await page.route(`${API_BASE}/learn/me/certificates`, (route) => route.fulfill(fulfill(certificates)));
+  await page.route(`${API_BASE}/learn/certificates/*`, (route) => route.fulfill(fulfill(verify)));
+}
+
+export async function setupAdminTestsApiMocks(
+  page: Page,
+  {
+    tests = MOCK_ADMIN_TESTS,
+    detail = MOCK_ADMIN_TEST_DETAIL,
+    testSaved = MOCK_TEST_CREATED,
+    questionSaved = MOCK_QUESTION_CREATED,
+  }: { tests?: unknown; detail?: unknown; testSaved?: unknown; questionSaved?: unknown } = {},
+) {
+  // Mutable so an appended question shows up on the detail refetch, mirroring
+  // the real (append-only) backend — same pattern as setupAdminLearnApiMocks.
+  const detailState = JSON.parse(JSON.stringify(detail)) as { data: { questions: unknown[] } };
+
+  await page.route(`${API_BASE}/admin/learn/courses/*/tests`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'POST' ? testSaved : tests)),
+  );
+  await page.route(`${API_BASE}/admin/learn/tests/*/questions`, (route) => {
+    const newQuestion = (questionSaved as { data: unknown }).data;
+    detailState.data.questions.push(newQuestion);
+    route.fulfill(fulfill({ success: true, data: newQuestion }));
+  });
+  await page.route(`${API_BASE}/admin/learn/tests/*`, (route) => route.fulfill(fulfill(detailState)));
+}
+
 export async function setupAdminLearnApiMocks(
   page: Page,
   {
@@ -243,4 +303,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupProfileApiMock(page);
   await setupNotificationsApiMock(page);
   await setupLearnApiMocks(page);
+  await setupTestsApiMocks(page);
 }

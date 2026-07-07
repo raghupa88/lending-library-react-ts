@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, CheckCircle2, Circle, FileText, Video, FileStack, PlayCircle, ClipboardCheck } from "lucide-react";
 import {
   useCourseQuery,
   useEnrollInCourse,
@@ -7,9 +7,11 @@ import {
   useCourseProgressQuery,
   type Lesson,
 } from "../../features/learn/queries";
+import { useCourseTestsQuery } from "../../features/learn/tests-queries";
 import { TRACK_LABELS, LEVEL_LABELS } from "../../features/learn/labels";
 import { Badge } from "../../components/ui/badge";
-import { Button } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { ProgressBar } from "../../components/ui/progress-bar";
@@ -39,6 +41,7 @@ export default function LearnDetail() {
   const alreadyEnrolled = Boolean(enrollment);
   const { data: progress } = useCourseProgressQuery(course?.id, alreadyEnrolled);
   const completedIds = new Set(progress?.completedLessonIds ?? []);
+  const { data: tests } = useCourseTestsQuery(course?.id, alreadyEnrolled);
 
   const handleEnroll = () => {
     if (!user || !course) {
@@ -181,6 +184,49 @@ export default function LearnDetail() {
               </li>
             ))}
           </ol>
+
+          {alreadyEnrolled && tests && tests.length > 0 && (
+            <>
+              <h2 className="mt-10 font-display text-xl font-semibold">Tests</h2>
+              <ul className="mt-4 space-y-3">
+                {tests.map((t) => {
+                  const attemptsLeft = t.attemptsAllowed - t.attemptsUsed;
+                  return (
+                    <li key={t.id}>
+                      <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            <ClipboardCheck className="size-4 text-muted" aria-hidden="true" />
+                            {t.title}
+                          </div>
+                          <div className="mt-1 text-sm text-muted">
+                            Pass at {t.passPercent}% · {t.timeLimitMin} min ·{" "}
+                            {attemptsLeft > 0
+                              ? `${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left`
+                              : "No attempts left"}
+                            {t.bestScorePercent != null && ` · Best score ${t.bestScorePercent}%`}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {t.passed && <Badge variant="success">Passed</Badge>}
+                          <Link
+                            to={`/learn/${slug}/test/${t.id}`}
+                            className={cn(
+                              buttonVariants({ variant: t.passed ? "secondary" : "primary", size: "sm" }),
+                              attemptsLeft <= 0 && !t.passed && "pointer-events-none opacity-50",
+                            )}
+                            aria-disabled={attemptsLeft <= 0 && !t.passed}
+                          >
+                            {t.passed ? "Retake" : "Take test"}
+                          </Link>
+                        </div>
+                      </Card>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </article>
       )}
     </div>

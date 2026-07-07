@@ -42,11 +42,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/books", "/api/v1/books/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/subscriptions/plans").permitAll()
-                // More specific first: progress is per-learner and must stay
-                // authenticated even though the broader courses/** browse
-                // routes below are public.
+                // More specific first: progress and tests are per-learner and
+                // must stay authenticated even though the broader courses/**
+                // browse routes below are public.
                 .requestMatchers(HttpMethod.GET, "/api/v1/learn/courses/*/progress").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/learn/courses/*/tests").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/learn/courses", "/api/v1/learn/courses/**").permitAll()
+                // Certificate verification is meant to be shared/checked by
+                // anyone holding the serial, not just the learner who earned it.
+                .requestMatchers(HttpMethod.GET, "/api/v1/learn/certificates/*").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/swagger-ui.html", "/api/v1/swagger-ui/**",
                                  "/api/v1/docs", "/api/v1/docs/**").permitAll()

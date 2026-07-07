@@ -577,6 +577,201 @@ export const MOCK_NOTIFICATIONS = {
   ],
 };
 
+// --- Learn tests / attempts / certificates (backend Test*/Attempt*/Certificate* responses) ---
+
+export const MOCK_TESTS = {
+  success: true,
+  data: [
+    {
+      id: 'test-1',
+      title: 'Module 1 Check',
+      passPercent: 70,
+      timeLimitMin: 10,
+      attemptsAllowed: 2,
+      attemptsUsed: 0,
+      bestScorePercent: null,
+      passed: false,
+    },
+  ],
+};
+
+export const MOCK_TESTS_EXHAUSTED = {
+  success: true,
+  data: [{ ...MOCK_TESTS.data[0], attemptsUsed: 2, bestScorePercent: 40, passed: false }],
+};
+
+export const MOCK_TEST_FOR_LEARNER = {
+  success: true,
+  data: {
+    id: 'test-1',
+    title: 'Module 1 Check',
+    passPercent: 70,
+    timeLimitMin: 10,
+    attemptsAllowed: 2,
+    attemptsUsed: 0,
+    questions: [
+      {
+        id: 'question-1',
+        prompt: 'Which grows your wealth over decades?',
+        kind: 'SINGLE',
+        sortOrder: 0,
+        options: [
+          { id: 'option-1a', label: 'Saving', sortOrder: 0 },
+          { id: 'option-1b', label: 'Investing', sortOrder: 1 },
+        ],
+      },
+      {
+        id: 'question-2',
+        prompt: 'Risk means certain loss.',
+        kind: 'TRUEFALSE',
+        sortOrder: 1,
+        options: [
+          { id: 'option-2a', label: 'True', sortOrder: 0 },
+          { id: 'option-2b', label: 'False', sortOrder: 1 },
+        ],
+      },
+    ],
+  },
+};
+
+export const MOCK_ATTEMPT_START = {
+  success: true,
+  data: { attemptId: 'attempt-1', testId: 'test-1', startedAt: daysFromNow(0), timeLimitMin: 10 },
+};
+
+export const MOCK_ATTEMPT_RESULT_PASS = {
+  success: true,
+  data: {
+    attemptId: 'attempt-1',
+    scorePercent: 100,
+    passed: true,
+    attemptsUsed: 1,
+    attemptsAllowed: 2,
+    certificateIssued: true,
+    certificateSerial: 'SUV-ABCD1234',
+    questionResults: [
+      {
+        questionId: 'question-1',
+        correct: true,
+        correctOptionIds: ['option-1b'],
+        selectedOptionIds: ['option-1b'],
+      },
+      {
+        questionId: 'question-2',
+        correct: true,
+        correctOptionIds: ['option-2b'],
+        selectedOptionIds: ['option-2b'],
+      },
+    ],
+  },
+};
+
+export const MOCK_ATTEMPT_RESULT_FAIL = {
+  success: true,
+  data: {
+    attemptId: 'attempt-1',
+    scorePercent: 0,
+    passed: false,
+    attemptsUsed: 1,
+    attemptsAllowed: 2,
+    certificateIssued: false,
+    certificateSerial: null,
+    questionResults: [
+      {
+        questionId: 'question-1',
+        correct: false,
+        correctOptionIds: ['option-1b'],
+        selectedOptionIds: ['option-1a'],
+      },
+      {
+        questionId: 'question-2',
+        correct: false,
+        correctOptionIds: ['option-2b'],
+        selectedOptionIds: ['option-2a'],
+      },
+    ],
+  },
+};
+
+export const MOCK_CERTIFICATES = {
+  success: true,
+  data: [
+    {
+      id: 'cert-1',
+      courseTitle: 'Money Foundations',
+      courseSlug: 'money-foundations',
+      issuedAt: daysFromNow(0),
+      serial: 'SUV-ABCD1234',
+    },
+  ],
+};
+
+export const MOCK_CERTIFICATES_EMPTY = { success: true, data: [] };
+
+export const MOCK_CERTIFICATE_VERIFY = {
+  success: true,
+  data: {
+    serial: 'SUV-ABCD1234',
+    learnerName: 'Test Member',
+    courseTitle: 'Money Foundations',
+    issuedAt: daysFromNow(0),
+  },
+};
+
+export const MOCK_CERTIFICATE_VERIFY_NOT_FOUND = {
+  success: false,
+  error: 'No certificate found for serial: SUV-NOPE',
+};
+
+export const MOCK_ADMIN_TESTS = {
+  success: true,
+  data: [
+    { id: 'test-1', title: 'Module 1 Check', passPercent: 70, timeLimitMin: 10, attemptsAllowed: 2, questionCount: 2 },
+  ],
+};
+
+export const MOCK_ADMIN_TEST_DETAIL = {
+  success: true,
+  data: {
+    id: 'test-1',
+    title: 'Module 1 Check',
+    passPercent: 70,
+    timeLimitMin: 10,
+    attemptsAllowed: 2,
+    questions: [
+      {
+        id: 'question-1',
+        prompt: 'Which grows your wealth over decades?',
+        kind: 'SINGLE',
+        sortOrder: 0,
+        options: [
+          { id: 'option-1a', label: 'Saving', correct: false, sortOrder: 0 },
+          { id: 'option-1b', label: 'Investing', correct: true, sortOrder: 1 },
+        ],
+      },
+    ],
+  },
+};
+
+export const MOCK_TEST_CREATED = {
+  success: true,
+  data: { id: 'test-new', title: 'New Test', passPercent: 70, timeLimitMin: 10, attemptsAllowed: 2, questionCount: 0 },
+};
+
+export const MOCK_QUESTION_CREATED = {
+  success: true,
+  data: {
+    id: 'question-new',
+    prompt: 'New question?',
+    kind: 'SINGLE',
+    sortOrder: 0,
+    options: [
+      { id: 'option-new-a', label: 'Option A', correct: false, sortOrder: 0 },
+      { id: 'option-new-b', label: 'Option B', correct: true, sortOrder: 1 },
+    ],
+  },
+};
+
 export const MOCK_NOTIFICATIONS_EMPTY = { success: true, data: [] };
 export const MOCK_UNREAD_COUNT = { success: true, data: { count: 1 } };
 export const MOCK_UNREAD_COUNT_ZERO = { success: true, data: { count: 0 } };
