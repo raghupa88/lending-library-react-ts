@@ -105,3 +105,24 @@ consistently avoided building ahead of need — see every prior ADR's
   (search, cross-service activity feeds, a real deployment target),
   rather than building the infrastructure speculatively ahead of any
   consumer.
+
+## Addendum: a real bug the ITs caught on first CI run
+The PR's first CI run failed the `backend` job — but not from anything in
+items 4/5 above. GitHub's hosted runner has ordinary Docker and got past
+container startup entirely; the actual failure was
+`IllegalArgumentException: Could not resolve placeholder
+'cors.allowed-origins'` while building `securityConfig`.
+
+`backend/src/test/resources/application.yml` **replaces**, not merges
+with, `src/main/resources/application.yml` on the test classpath (Spring
+Boot loads exactly one `application.yml` from the classpath root). It only
+overrode `jwt.*`, so `cors.allowed-origins` — which has a default in the
+main file — silently had none under test. This was invisible until now
+because every prior test is either a pure Mockito unit test or a
+`@WebMvcTest` slice narrow enough never to instantiate `SecurityConfig`;
+`FlywayMigrationIT`/`PaymentAuditTransactionIT` are the first tests in the
+suite to boot the full context. Fixed by adding a `cors.allowed-origins`
+default to the test override file, alongside the existing `jwt.*` ones.
+Verified locally past this point (Spring context now builds cleanly); the
+run still hits this sandbox's Docker-registry block afterward as
+expected, unrelated to this fix.
