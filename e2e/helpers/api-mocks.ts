@@ -50,6 +50,7 @@ import {
   MOCK_ADMIN_BATCH_PUBLISHED,
   MOCK_ADMIN_BATCH_DETAIL,
   MOCK_ATTENDANCE_MARKED,
+  MOCK_ADMIN_ANALYTICS,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -355,6 +356,10 @@ export async function setupAdminBatchesApiMocks(
     route.fulfill(fulfill(attendanceMarked)),
   );
   await page.route(`${API_BASE}/admin/learn/batches/*`, (route) => route.fulfill(fulfill(detail)));
+}
+
+export async function setupAdminAnalyticsApiMocks(page: Page, analytics: unknown = MOCK_ADMIN_ANALYTICS) {
+  await page.route(`${API_BASE}/admin/learn/analytics`, (route) => route.fulfill(fulfill(analytics)));
 }
 
 export async function setupAllApiMocks(page: Page) {
