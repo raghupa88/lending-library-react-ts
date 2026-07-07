@@ -5,6 +5,7 @@ import { AdminShell } from "./components/layout/AdminShell";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import BooksAdmin from "./pages/Admin/BooksAdmin";
 import CoursesAdmin from "./pages/Admin/CoursesAdmin";
+import VenuesAdmin from "./pages/Admin/VenuesAdmin";
 import MembersAdmin from "./pages/Admin/MembersAdmin";
 import LoansAdmin from "./pages/Admin/LoansAdmin";
 import { LoadingSpinner } from "./components/ui/loading";
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/books" element={<BooksAdmin />} />
         <Route path="/admin/learn/courses" element={<CoursesAdmin />} />
+        <Route path="/admin/learn/venues" element={<VenuesAdmin />} />
         <Route path="/admin/members" element={<MembersAdmin />} />
         <Route path="/admin/loans" element={<LoansAdmin />} />
       </Route>

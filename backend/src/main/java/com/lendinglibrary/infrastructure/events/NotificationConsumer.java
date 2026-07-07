@@ -44,6 +44,11 @@ public class NotificationConsumer {
         handle(payload, this::notifyForSubscriptionEvent);
     }
 
+    @KafkaListener(topics = Topics.COURSE_EVENTS, groupId = "notifications")
+    public void onCourseEvent(String payload) {
+        handle(payload, this::notifyForCourseEvent);
+    }
+
     private void handle(String payload, java.util.function.Consumer<DomainEvent> action) {
         DomainEvent event;
         try {
@@ -92,6 +97,35 @@ public class NotificationConsumer {
         saveAndEmail(user, event.type(),
                 "You're now on the " + plan + " plan",
                 "Your subscription change is active immediately.");
+    }
+
+    private void notifyForCourseEvent(DomainEvent event) {
+        String userEmail = (String) event.data().get("userEmail");
+        String courseTitle = (String) event.data().get("courseTitle");
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) return;
+
+        String title;
+        String body;
+        switch (event.type()) {
+            case "course.enrolled" -> {
+                title = "You're enrolled in \"" + courseTitle + "\"";
+                body = "Head to Suvadi Learn to start your first lesson.";
+            }
+            case "test.passed" -> {
+                title = "You passed the test for \"" + courseTitle + "\"!";
+                body = "Scored " + event.data().get("scorePercent") + "%. Check your certificates on the dashboard.";
+            }
+            case "batch.booked" -> {
+                title = "Seat confirmed for \"" + courseTitle + "\"";
+                body = "You're booked into the in-person batch — see your dashboard for the schedule.";
+            }
+            default -> {
+                log.warn("Unhandled course event type, skipping: {}", event.type());
+                return;
+            }
+        }
+        saveAndEmail(user, event.type(), title, body);
     }
 
     private void saveAndEmail(User user, String type, String title, String body) {

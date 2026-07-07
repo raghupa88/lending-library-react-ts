@@ -56,6 +56,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/venues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a venue */
+        put: operations["updateVenue"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/sessions/{id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a learner present/absent for a session */
+        put: operations["markAttendance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/learn/courses/{id}": {
         parameters: {
             query?: never;
@@ -101,6 +135,40 @@ export interface paths {
         get?: never;
         /** Publish a course, making it visible to learners */
         put: operations["publish"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/batches/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish a batch, opening it for booking */
+        put: operations["publishBatch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/batches/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Cancel a batch */
+        put: operations["cancelBatch"];
         post?: never;
         delete?: never;
         options?: never;
@@ -229,6 +297,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/batches/{id}/book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Book a seat in a batch (waitlisted automatically once full) */
+        post: operations["bookSeat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/attempts/{id}/submit": {
         parameters: {
             query?: never;
@@ -308,6 +393,24 @@ export interface paths {
         put?: never;
         /** Login and get tokens */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all venues */
+        get: operations["listVenues"];
+        put?: never;
+        /** Create a venue */
+        post: operations["createVenue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -395,6 +498,24 @@ export interface paths {
         put?: never;
         /** Append a module to a course */
         post: operations["addModule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses/{id}/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a course's in-person batches, with roster counts */
+        get: operations["listBatches_1"];
+        put?: never;
+        /** Schedule a batch (with its sessions) for a course */
+        post: operations["createBatch"];
         delete?: never;
         options?: never;
         head?: never;
@@ -537,6 +658,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/me/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's batch bookings */
+        get: operations["myBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/courses": {
         parameters: {
             query?: never;
@@ -597,6 +735,23 @@ export interface paths {
         };
         /** Get the current user's lesson-completion progress for an enrolled course */
         get: operations["getProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/courses/{id}/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a course's upcoming published in-person batches */
+        get: operations["listBatches"];
         put?: never;
         post?: never;
         delete?: never;
@@ -707,6 +862,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/batches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a batch's sessions and full roster */
+        get: operations["getBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancel a booking (promotes the next waitlisted learner if this seat was confirmed) */
+        delete: operations["cancelBooking"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -770,6 +959,39 @@ export interface components {
             returnedAt?: string;
             status?: string;
         };
+        VenueRequest: {
+            name: string;
+            address?: string;
+            city: string;
+            /** Format: int32 */
+            capacityDefault?: number;
+        };
+        ApiResponseVenueResponse: {
+            success?: boolean;
+            data?: components["schemas"]["VenueResponse"];
+            message?: string;
+            error?: string;
+        };
+        VenueResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            address?: string;
+            city?: string;
+            /** Format: int32 */
+            capacityDefault?: number;
+        };
+        AttendanceInput: {
+            /** Format: uuid */
+            userId: string;
+            present?: boolean;
+        };
+        ApiResponseVoid: {
+            success?: boolean;
+            data?: Record<string, never>;
+            message?: string;
+            error?: string;
+        };
         CourseRequest: {
             slug: string;
             title: string;
@@ -802,6 +1024,31 @@ export interface components {
             moduleCount?: number;
             /** Format: int64 */
             lessonCount?: number;
+        };
+        AdminBatchSummaryResponse: {
+            /** Format: uuid */
+            id?: string;
+            venueName?: string;
+            instructorName?: string;
+            /** Format: date */
+            startsOn?: string;
+            /** Format: date */
+            endsOn?: string;
+            scheduleText?: string;
+            /** Format: int32 */
+            capacity?: number;
+            fee?: number;
+            status?: string;
+            /** Format: int64 */
+            confirmedCount?: number;
+            /** Format: int64 */
+            waitlistedCount?: number;
+        };
+        ApiResponseAdminBatchSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminBatchSummaryResponse"];
+            message?: string;
+            error?: string;
         };
         BookRequest: {
             title: string;
@@ -957,6 +1204,27 @@ export interface components {
             /** Format: uuid */
             nextLessonId?: string;
         };
+        ApiResponseBookingResponse: {
+            success?: boolean;
+            data?: components["schemas"]["BookingResponse"];
+            message?: string;
+            error?: string;
+        };
+        BookingResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            batchId?: string;
+            courseTitle?: string;
+            venueName?: string;
+            /** Format: date */
+            startsOn?: string;
+            /** Format: date */
+            endsOn?: string;
+            status?: string;
+            /** Format: date-time */
+            bookedAt?: string;
+        };
         AnswerInput: {
             /** Format: uuid */
             questionId: string;
@@ -1018,12 +1286,6 @@ export interface components {
         };
         RefreshRequest: {
             refreshToken?: string;
-        };
-        ApiResponseVoid: {
-            success?: boolean;
-            data?: Record<string, never>;
-            message?: string;
-            error?: string;
         };
         LoginRequest: {
             email: string;
@@ -1134,6 +1396,25 @@ export interface components {
             sortOrder?: number;
             lessons?: components["schemas"]["LessonResponse"][];
         };
+        BatchRequest: {
+            /** Format: uuid */
+            venueId: string;
+            instructorName: string;
+            /** Format: date */
+            startsOn: string;
+            /** Format: date */
+            endsOn: string;
+            scheduleText: string;
+            /** Format: int32 */
+            capacity?: number;
+            fee: number;
+            sessions: components["schemas"]["SessionInput"][];
+        };
+        SessionInput: {
+            /** Format: date */
+            sessionDate: string;
+            topic: string;
+        };
         ApiResponseListSubscriptionPlanResponse: {
             success?: boolean;
             data?: components["schemas"]["SubscriptionPlanResponse"][];
@@ -1232,6 +1513,12 @@ export interface components {
             issuedAt?: string;
             serial?: string;
         };
+        ApiResponseListBookingResponse: {
+            success?: boolean;
+            data?: components["schemas"]["BookingResponse"][];
+            message?: string;
+            error?: string;
+        };
         ApiResponsePagedResponseCourseSummaryResponse: {
             success?: boolean;
             data?: components["schemas"]["PagedResponseCourseSummaryResponse"];
@@ -1291,6 +1578,28 @@ export interface components {
             /** Format: int32 */
             bestScorePercent?: number;
             passed?: boolean;
+        };
+        ApiResponseListBatchForLearnerResponse: {
+            success?: boolean;
+            data?: components["schemas"]["BatchForLearnerResponse"][];
+            message?: string;
+            error?: string;
+        };
+        BatchForLearnerResponse: {
+            /** Format: uuid */
+            id?: string;
+            venueName?: string;
+            city?: string;
+            instructorName?: string;
+            /** Format: date */
+            startsOn?: string;
+            /** Format: date */
+            endsOn?: string;
+            scheduleText?: string;
+            fee?: number;
+            /** Format: int32 */
+            seatsAvailable?: number;
+            myBookingStatus?: string;
         };
         ApiResponseCertificateVerifyResponse: {
             success?: boolean;
@@ -1365,6 +1674,12 @@ export interface components {
             message?: string;
             error?: string;
         };
+        ApiResponseListVenueResponse: {
+            success?: boolean;
+            data?: components["schemas"]["VenueResponse"][];
+            message?: string;
+            error?: string;
+        };
         AdminTestDetailResponse: {
             /** Format: uuid */
             id?: string;
@@ -1394,6 +1709,53 @@ export interface components {
             data?: components["schemas"]["AdminTestSummaryResponse"][];
             message?: string;
             error?: string;
+        };
+        ApiResponseListAdminBatchSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminBatchSummaryResponse"][];
+            message?: string;
+            error?: string;
+        };
+        AdminBatchDetailResponse: {
+            /** Format: uuid */
+            id?: string;
+            venueName?: string;
+            instructorName?: string;
+            /** Format: date */
+            startsOn?: string;
+            /** Format: date */
+            endsOn?: string;
+            scheduleText?: string;
+            /** Format: int32 */
+            capacity?: number;
+            fee?: number;
+            status?: string;
+            sessions?: components["schemas"]["SessionResponse"][];
+            roster?: components["schemas"]["RosterEntryResponse"][];
+        };
+        ApiResponseAdminBatchDetailResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminBatchDetailResponse"];
+            message?: string;
+            error?: string;
+        };
+        RosterEntryResponse: {
+            /** Format: uuid */
+            bookingId?: string;
+            /** Format: uuid */
+            userId?: string;
+            userName?: string;
+            userEmail?: string;
+            status?: string;
+            /** Format: date-time */
+            bookedAt?: string;
+        };
+        SessionResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date */
+            sessionDate?: string;
+            topic?: string;
         };
     };
     responses: never;
@@ -1496,6 +1858,58 @@ export interface operations {
             };
         };
     };
+    updateVenue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VenueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVenueResponse"];
+                };
+            };
+        };
+    };
+    markAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     getById_2: {
         parameters: {
             query?: never;
@@ -1584,6 +1998,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    publishBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminBatchSummaryResponse"];
+                };
+            };
+        };
+    };
+    cancelBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminBatchSummaryResponse"];
                 };
             };
         };
@@ -1792,6 +2250,28 @@ export interface operations {
             };
         };
     };
+    bookSeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponse"];
+                };
+            };
+        };
+    };
     submitAttempt: {
         parameters: {
             query?: never;
@@ -1920,6 +2400,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAuthResponse"];
+                };
+            };
+        };
+    };
+    listVenues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListVenueResponse"];
+                };
+            };
+        };
+    };
+    createVenue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VenueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVenueResponse"];
                 };
             };
         };
@@ -2094,6 +2618,54 @@ export interface operations {
             };
         };
     };
+    listBatches_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminBatchSummaryResponse"];
+                };
+            };
+        };
+    };
+    createBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminBatchSummaryResponse"];
+                };
+            };
+        };
+    };
     create_2: {
         parameters: {
             query?: never;
@@ -2260,6 +2832,26 @@ export interface operations {
             };
         };
     };
+    myBookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponse"];
+                };
+            };
+        };
+    };
     list_1: {
         parameters: {
             query?: {
@@ -2348,6 +2940,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCourseProgressResponse"];
+                };
+            };
+        };
+    };
+    listBatches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBatchForLearnerResponse"];
                 };
             };
         };
@@ -2484,6 +3098,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminTestDetailResponse"];
+                };
+            };
+        };
+    };
+    getBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminBatchDetailResponse"];
+                };
+            };
+        };
+    };
+    cancelBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

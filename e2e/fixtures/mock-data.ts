@@ -772,6 +772,125 @@ export const MOCK_QUESTION_CREATED = {
   },
 };
 
+// --- Batches, venues and bookings (L4: in-person classes) ---
+
+export const MOCK_VENUES = {
+  success: true,
+  data: [
+    { id: 'venue-1', name: 'Suvadi Hall', address: '12 Cathedral Rd', city: 'Chennai', capacityDefault: 20 },
+  ],
+};
+
+export const MOCK_VENUE_CREATED = {
+  success: true,
+  data: { id: 'venue-new', name: 'New Venue', address: null, city: 'Coimbatore', capacityDefault: 15 },
+};
+
+export const MOCK_BATCH_FOR_LEARNER = {
+  id: 'batch-1',
+  venueName: 'Suvadi Hall',
+  city: 'Chennai',
+  instructorName: 'Priya Raman',
+  startsOn: '2026-08-01',
+  endsOn: '2026-08-02',
+  scheduleText: 'Sat-Sun, 10am-1pm',
+  fee: 0,
+  seatsAvailable: 1,
+  myBookingStatus: null as 'CONFIRMED' | 'WAITLISTED' | null,
+};
+
+export const MOCK_BATCHES_FOR_LEARNER = { success: true, data: [MOCK_BATCH_FOR_LEARNER] };
+
+export const MOCK_BATCHES_FOR_LEARNER_FULL = {
+  success: true,
+  data: [{ ...MOCK_BATCH_FOR_LEARNER, seatsAvailable: 0 }],
+};
+
+export const MOCK_BATCHES_FOR_LEARNER_BOOKED = {
+  success: true,
+  data: [{ ...MOCK_BATCH_FOR_LEARNER, seatsAvailable: 0, myBookingStatus: 'CONFIRMED' }],
+};
+
+export const MOCK_BOOKING_CONFIRMED = {
+  success: true,
+  data: {
+    id: 'booking-1',
+    batchId: 'batch-1',
+    courseTitle: 'Money Foundations',
+    venueName: 'Suvadi Hall',
+    startsOn: '2026-08-01',
+    endsOn: '2026-08-02',
+    status: 'CONFIRMED',
+    bookedAt: daysFromNow(0),
+  },
+};
+
+export const MOCK_BOOKING_WAITLISTED = {
+  success: true,
+  data: { ...MOCK_BOOKING_CONFIRMED.data, id: 'booking-2', status: 'WAITLISTED' },
+};
+
+export const MOCK_MY_BOOKINGS_EMPTY = { success: true, data: [] };
+export const MOCK_MY_BOOKINGS = { success: true, data: [MOCK_BOOKING_CONFIRMED.data] };
+export const MOCK_CANCEL_BOOKING_SUCCESS = { success: true, data: null };
+
+export const MOCK_ADMIN_BATCHES = {
+  success: true,
+  data: [
+    {
+      id: 'batch-1',
+      venueName: 'Suvadi Hall',
+      instructorName: 'Priya Raman',
+      startsOn: '2026-08-01',
+      endsOn: '2026-08-02',
+      scheduleText: 'Sat-Sun, 10am-1pm',
+      capacity: 1,
+      fee: 0,
+      status: 'DRAFT',
+      confirmedCount: 0,
+      waitlistedCount: 0,
+    },
+  ],
+};
+
+export const MOCK_ADMIN_BATCH_CREATED = {
+  success: true,
+  data: { ...MOCK_ADMIN_BATCHES.data[0], id: 'batch-new' },
+};
+
+export const MOCK_ADMIN_BATCH_PUBLISHED = {
+  success: true,
+  data: { ...MOCK_ADMIN_BATCHES.data[0], status: 'PUBLISHED' },
+};
+
+export const MOCK_ADMIN_BATCH_DETAIL = {
+  success: true,
+  data: {
+    id: 'batch-1',
+    venueName: 'Suvadi Hall',
+    instructorName: 'Priya Raman',
+    startsOn: '2026-08-01',
+    endsOn: '2026-08-02',
+    scheduleText: 'Sat-Sun, 10am-1pm',
+    capacity: 1,
+    fee: 0,
+    status: 'DRAFT',
+    sessions: [{ id: 'session-1', sessionDate: '2026-08-01', topic: 'Intro session' }],
+    roster: [
+      {
+        bookingId: 'booking-1',
+        userId: 'user-1',
+        userName: 'Test Member',
+        userEmail: 'member@example.com',
+        status: 'CONFIRMED',
+        bookedAt: daysFromNow(0),
+      },
+    ],
+  },
+};
+
+export const MOCK_ATTENDANCE_MARKED = { success: true, data: null };
+
 export const MOCK_NOTIFICATIONS_EMPTY = { success: true, data: [] };
 export const MOCK_UNREAD_COUNT = { success: true, data: { count: 1 } };
 export const MOCK_UNREAD_COUNT_ZERO = { success: true, data: { count: 0 } };

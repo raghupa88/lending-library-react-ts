@@ -4,6 +4,8 @@ import com.lendinglibrary.api.dto.*;
 import com.lendinglibrary.api.envelope.ApiResponse;
 import com.lendinglibrary.api.envelope.PagedResponse;
 import com.lendinglibrary.application.service.AttemptService;
+import com.lendinglibrary.application.service.BatchService;
+import com.lendinglibrary.application.service.BookingService;
 import com.lendinglibrary.application.service.CertificateService;
 import com.lendinglibrary.application.service.CourseService;
 import com.lendinglibrary.application.service.EnrollmentService;
@@ -37,6 +39,8 @@ public class LearnController {
     private final TestService testService;
     private final AttemptService attemptService;
     private final CertificateService certificateService;
+    private final BatchService batchService;
+    private final BookingService bookingService;
 
     @GetMapping("/courses")
     @Operation(summary = "Browse published courses with optional filters")
@@ -139,5 +143,39 @@ public class LearnController {
     public ResponseEntity<ApiResponse<CertificateVerifyResponse>> verifyCertificate(
             @PathVariable String serial) {
         return ResponseEntity.ok(ApiResponse.ok(certificateService.verify(serial)));
+    }
+
+    @GetMapping("/courses/{id}/batches")
+    @Operation(summary = "List a course's upcoming published in-person batches")
+    public ResponseEntity<ApiResponse<List<BatchForLearnerResponse>>> listBatches(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        String email = user == null ? null : user.getUsername();
+        return ResponseEntity.ok(ApiResponse.ok(batchService.listForLearner(id, email)));
+    }
+
+    @PostMapping("/batches/{id}/book")
+    @Operation(summary = "Book a seat in a batch (waitlisted automatically once full)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<BookingResponse>> bookSeat(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
+                bookingService.bookSeat(id, user.getUsername()), "Seat booked!"));
+    }
+
+    @DeleteMapping("/bookings/{id}")
+    @Operation(summary = "Cancel a booking (promotes the next waitlisted learner if this seat was confirmed)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<Void>> cancelBooking(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        bookingService.cancelBooking(id, user.getUsername());
+        return ResponseEntity.ok(ApiResponse.ok(null, "Booking cancelled"));
+    }
+
+    @GetMapping("/me/bookings")
+    @Operation(summary = "List the current user's batch bookings")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> myBookings(
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(bookingService.myBookings(user.getUsername())));
     }
 }

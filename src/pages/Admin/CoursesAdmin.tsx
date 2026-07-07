@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Library, Eye, EyeOff, ClipboardCheck } from "lucide-react";
+import { Plus, Pencil, Library, Eye, EyeOff, ClipboardCheck, CalendarDays } from "lucide-react";
 import {
   useAdminCoursesQuery,
   useCreateCourse,
@@ -25,6 +25,7 @@ import { useToast } from "../../components/ui/toast";
 import { ApiError } from "../../lib/api";
 import { SyllabusDialog } from "./SyllabusDialog";
 import { TestsDialog } from "./TestsDialog";
+import { BatchesDialog } from "./BatchesDialog";
 
 type FormDialogState = { mode: "create" } | { mode: "edit"; course: CourseSummary } | null;
 
@@ -32,6 +33,7 @@ export default function CoursesAdmin() {
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
   const [syllabusFor, setSyllabusFor] = useState<CourseSummary | null>(null);
   const [testsFor, setTestsFor] = useState<CourseSummary | null>(null);
+  const [batchesFor, setBatchesFor] = useState<CourseSummary | null>(null);
   const { data: courses, isLoading } = useAdminCoursesQuery();
   const setPublished = useSetCoursePublished();
   const { toast } = useToast();
@@ -127,6 +129,15 @@ export default function CoursesAdmin() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Manage batches for ${course.title}`}
+                        onClick={() => setBatchesFor(course)}
+                      >
+                        <CalendarDays aria-hidden="true" />
+                        Batches
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label={`Edit ${course.title}`}
                         onClick={() => setFormDialog({ mode: "edit", course })}
                       >
@@ -171,6 +182,9 @@ export default function CoursesAdmin() {
       )}
       {testsFor && (
         <TestsDialog courseId={testsFor.id} title={testsFor.title} onClose={() => setTestsFor(null)} />
+      )}
+      {batchesFor && (
+        <BatchesDialog courseId={batchesFor.id} title={batchesFor.title} onClose={() => setBatchesFor(null)} />
       )}
     </div>
   );
