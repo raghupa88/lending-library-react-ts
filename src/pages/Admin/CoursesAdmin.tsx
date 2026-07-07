@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Pencil, Library, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Library, Eye, EyeOff, ClipboardCheck } from "lucide-react";
 import {
   useAdminCoursesQuery,
   useCreateCourse,
@@ -24,12 +24,14 @@ import { EmptyState } from "../../components/ui/empty-state";
 import { useToast } from "../../components/ui/toast";
 import { ApiError } from "../../lib/api";
 import { SyllabusDialog } from "./SyllabusDialog";
+import { TestsDialog } from "./TestsDialog";
 
 type FormDialogState = { mode: "create" } | { mode: "edit"; course: CourseSummary } | null;
 
 export default function CoursesAdmin() {
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
   const [syllabusFor, setSyllabusFor] = useState<CourseSummary | null>(null);
+  const [testsFor, setTestsFor] = useState<CourseSummary | null>(null);
   const { data: courses, isLoading } = useAdminCoursesQuery();
   const setPublished = useSetCoursePublished();
   const { toast } = useToast();
@@ -116,6 +118,15 @@ export default function CoursesAdmin() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Manage tests for ${course.title}`}
+                        onClick={() => setTestsFor(course)}
+                      >
+                        <ClipboardCheck aria-hidden="true" />
+                        Tests
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label={`Edit ${course.title}`}
                         onClick={() => setFormDialog({ mode: "edit", course })}
                       >
@@ -157,6 +168,9 @@ export default function CoursesAdmin() {
       {formDialog && <CourseFormDialog state={formDialog} onClose={() => setFormDialog(null)} />}
       {syllabusFor && (
         <SyllabusDialog courseId={syllabusFor.id} title={syllabusFor.title} onClose={() => setSyllabusFor(null)} />
+      )}
+      {testsFor && (
+        <TestsDialog courseId={testsFor.id} title={testsFor.title} onClose={() => setTestsFor(null)} />
       )}
     </div>
   );

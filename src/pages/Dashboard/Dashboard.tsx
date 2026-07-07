@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap } from "lucide-react";
+import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap, Award } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   useMyLoansQuery,
@@ -14,6 +14,7 @@ import {
   formatMaxBooks,
 } from "../../features/subscriptions/queries";
 import { useMyEnrollmentsQuery } from "../../features/learn/queries";
+import { useMyCertificatesQuery } from "../../features/learn/tests-queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const { data: loans, isLoading } = useMyLoansQuery(Boolean(user));
   const { data: subscription } = useCurrentSubscriptionQuery(Boolean(user));
   const { data: enrollments } = useMyEnrollmentsQuery(Boolean(user));
+  const { data: certificates } = useMyCertificatesQuery(Boolean(user));
   const returnBook = useReturnBook();
 
   if (!user) return null;
@@ -247,6 +249,28 @@ export default function Dashboard() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {certificates && certificates.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wide">Certificates</h3>
+                <ul className="mt-2 space-y-2">
+                  {certificates.map((cert) => (
+                    <li key={cert.id}>
+                      <Link
+                        to={`/certificates/${cert.serial}`}
+                        className="flex items-center gap-3 rounded-(--radius-card) border border-border bg-surface p-3 hover:border-accent"
+                      >
+                        <Award className="size-5 shrink-0 text-accent" aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium">{cert.courseTitle}</div>
+                          <div className="text-xs text-muted">{formatDate(cert.issuedAt)}</div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </TabPanel>
         </section>

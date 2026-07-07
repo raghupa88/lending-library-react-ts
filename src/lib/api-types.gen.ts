@@ -178,6 +178,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/tests/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new attempt at a test */
+        post: operations["startAttempt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/lessons/{id}/complete": {
         parameters: {
             query?: never;
@@ -206,6 +223,23 @@ export interface paths {
         put?: never;
         /** Enroll in a free course */
         post: operations["enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/attempts/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit answers for an attempt and get the scored result */
+        post: operations["submitAttempt"];
         delete?: never;
         options?: never;
         head?: never;
@@ -280,6 +314,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/learn/tests/{id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append a question (with its options) to a test */
+        post: operations["addQuestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/learn/modules/{moduleId}/lessons": {
         parameters: {
             query?: never;
@@ -309,6 +360,24 @@ export interface paths {
         put?: never;
         /** Create a draft course */
         post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/courses/{id}/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a course's tests, with question counts */
+        get: operations["listTests_1"];
+        put?: never;
+        /** Create a test for a course */
+        post: operations["createTest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -417,6 +486,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/tests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a test's questions for taking it (no answer key) */
+        get: operations["getTest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/me/enrollments": {
         parameters: {
             query?: never;
@@ -426,6 +512,23 @@ export interface paths {
         };
         /** List the current user's course enrollments */
         get: operations["myEnrollments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/me/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's earned certificates */
+        get: operations["myCertificates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -468,6 +571,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/learn/courses/{id}/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List this course's tests with the current user's attempt status */
+        get: operations["listTests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/learn/courses/{id}/progress": {
         parameters: {
             query?: never;
@@ -477,6 +597,23 @@ export interface paths {
         };
         /** Get the current user's lesson-completion progress for an enrolled course */
         get: operations["getProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/learn/certificates/{serial}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Publicly verify a certificate by its serial */
+        get: operations["verifyCertificate"];
         put?: never;
         post?: never;
         delete?: never;
@@ -545,6 +682,23 @@ export interface paths {
         };
         /** List all loans, optionally filtered by status (active/overdue/returned) */
         get: operations["list_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/learn/tests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a test's full question bank, including the answer key */
+        get: operations["getTest_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -747,6 +901,22 @@ export interface components {
             /** Format: int32 */
             daysToKeep?: number;
         };
+        ApiResponseAttemptStartResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AttemptStartResponse"];
+            message?: string;
+            error?: string;
+        };
+        AttemptStartResponse: {
+            /** Format: uuid */
+            attemptId?: string;
+            /** Format: uuid */
+            testId?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: int32 */
+            timeLimitMin?: number;
+        };
         ApiResponseCourseProgressResponse: {
             success?: boolean;
             data?: components["schemas"]["CourseProgressResponse"];
@@ -787,6 +957,41 @@ export interface components {
             /** Format: uuid */
             nextLessonId?: string;
         };
+        AnswerInput: {
+            /** Format: uuid */
+            questionId: string;
+            selectedOptionIds?: string[];
+        };
+        AttemptSubmitRequest: {
+            answers: components["schemas"]["AnswerInput"][];
+        };
+        ApiResponseAttemptResultResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AttemptResultResponse"];
+            message?: string;
+            error?: string;
+        };
+        AttemptResultResponse: {
+            /** Format: uuid */
+            attemptId?: string;
+            /** Format: int32 */
+            scorePercent?: number;
+            passed?: boolean;
+            /** Format: int32 */
+            attemptsUsed?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+            certificateIssued?: boolean;
+            certificateSerial?: string;
+            questionResults?: components["schemas"]["QuestionResultResponse"][];
+        };
+        QuestionResultResponse: {
+            /** Format: uuid */
+            questionId?: string;
+            correct?: boolean;
+            correctOptionIds?: string[];
+            selectedOptionIds?: string[];
+        };
         RegisterRequest: {
             email: string;
             password: string;
@@ -824,6 +1029,39 @@ export interface components {
             email: string;
             password: string;
         };
+        QuestionOptionInput: {
+            label: string;
+            correct?: boolean;
+        };
+        QuestionRequest: {
+            prompt: string;
+            /** @enum {string} */
+            kind: "SINGLE" | "MULTI" | "TRUEFALSE";
+            options: components["schemas"]["QuestionOptionInput"][];
+        };
+        AdminOptionResponse: {
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            correct?: boolean;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        AdminQuestionResponse: {
+            /** Format: uuid */
+            id?: string;
+            prompt?: string;
+            kind?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+            options?: components["schemas"]["AdminOptionResponse"][];
+        };
+        ApiResponseAdminQuestionResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminQuestionResponse"];
+            message?: string;
+            error?: string;
+        };
         LessonRequest: {
             title: string;
             /** @enum {string} */
@@ -850,6 +1088,34 @@ export interface components {
             estMinutes?: number;
             /** Format: int32 */
             sortOrder?: number;
+        };
+        TestRequest: {
+            title: string;
+            /** Format: int32 */
+            passPercent?: number;
+            /** Format: int32 */
+            timeLimitMin?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+        };
+        AdminTestSummaryResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            /** Format: int32 */
+            passPercent?: number;
+            /** Format: int32 */
+            timeLimitMin?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+            /** Format: int32 */
+            questionCount?: number;
+        };
+        ApiResponseAdminTestSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminTestSummaryResponse"];
+            message?: string;
+            error?: string;
         };
         ModuleRequest: {
             title: string;
@@ -909,11 +1175,62 @@ export interface components {
             message?: string;
             error?: string;
         };
+        ApiResponseTestForLearnerResponse: {
+            success?: boolean;
+            data?: components["schemas"]["TestForLearnerResponse"];
+            message?: string;
+            error?: string;
+        };
+        OptionResponse: {
+            /** Format: uuid */
+            id?: string;
+            label?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        QuestionResponse: {
+            /** Format: uuid */
+            id?: string;
+            prompt?: string;
+            kind?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+            options?: components["schemas"]["OptionResponse"][];
+        };
+        TestForLearnerResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            /** Format: int32 */
+            passPercent?: number;
+            /** Format: int32 */
+            timeLimitMin?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+            /** Format: int32 */
+            attemptsUsed?: number;
+            questions?: components["schemas"]["QuestionResponse"][];
+        };
         ApiResponseListEnrollmentResponse: {
             success?: boolean;
             data?: components["schemas"]["EnrollmentResponse"][];
             message?: string;
             error?: string;
+        };
+        ApiResponseListCertificateResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CertificateResponse"][];
+            message?: string;
+            error?: string;
+        };
+        CertificateResponse: {
+            /** Format: uuid */
+            id?: string;
+            courseTitle?: string;
+            courseSlug?: string;
+            /** Format: date-time */
+            issuedAt?: string;
+            serial?: string;
         };
         ApiResponsePagedResponseCourseSummaryResponse: {
             success?: boolean;
@@ -952,6 +1269,41 @@ export interface components {
             price?: number;
             status?: string;
             modules?: components["schemas"]["ModuleResponse"][];
+        };
+        ApiResponseListTestListItemResponse: {
+            success?: boolean;
+            data?: components["schemas"]["TestListItemResponse"][];
+            message?: string;
+            error?: string;
+        };
+        TestListItemResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            /** Format: int32 */
+            passPercent?: number;
+            /** Format: int32 */
+            timeLimitMin?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+            /** Format: int32 */
+            attemptsUsed?: number;
+            /** Format: int32 */
+            bestScorePercent?: number;
+            passed?: boolean;
+        };
+        ApiResponseCertificateVerifyResponse: {
+            success?: boolean;
+            data?: components["schemas"]["CertificateVerifyResponse"];
+            message?: string;
+            error?: string;
+        };
+        CertificateVerifyResponse: {
+            serial?: string;
+            learnerName?: string;
+            courseTitle?: string;
+            /** Format: date-time */
+            issuedAt?: string;
         };
         ApiResponsePagedResponseBookResponse: {
             success?: boolean;
@@ -1013,9 +1365,33 @@ export interface components {
             message?: string;
             error?: string;
         };
+        AdminTestDetailResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            /** Format: int32 */
+            passPercent?: number;
+            /** Format: int32 */
+            timeLimitMin?: number;
+            /** Format: int32 */
+            attemptsAllowed?: number;
+            questions?: components["schemas"]["AdminQuestionResponse"][];
+        };
+        ApiResponseAdminTestDetailResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminTestDetailResponse"];
+            message?: string;
+            error?: string;
+        };
         ApiResponseListCourseSummaryResponse: {
             success?: boolean;
             data?: components["schemas"]["CourseSummaryResponse"][];
+            message?: string;
+            error?: string;
+        };
+        ApiResponseListAdminTestSummaryResponse: {
+            success?: boolean;
+            data?: components["schemas"]["AdminTestSummaryResponse"][];
             message?: string;
             error?: string;
         };
@@ -1350,6 +1726,28 @@ export interface operations {
             };
         };
     };
+    startAttempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAttemptStartResponse"];
+                };
+            };
+        };
+    };
     completeLesson: {
         parameters: {
             query?: never;
@@ -1390,6 +1788,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseEnrollmentResponse"];
+                };
+            };
+        };
+    };
+    submitAttempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttemptSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAttemptResultResponse"];
                 };
             };
         };
@@ -1500,6 +1924,32 @@ export interface operations {
             };
         };
     };
+    addQuestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminQuestionResponse"];
+                };
+            };
+        };
+    };
     addLesson: {
         parameters: {
             query?: never;
@@ -1566,6 +2016,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCourseSummaryResponse"];
+                };
+            };
+        };
+    };
+    listTests_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminTestSummaryResponse"];
+                };
+            };
+        };
+    };
+    createTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminTestSummaryResponse"];
                 };
             };
         };
@@ -1700,6 +2198,28 @@ export interface operations {
             };
         };
     };
+    getTest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTestForLearnerResponse"];
+                };
+            };
+        };
+    };
     myEnrollments: {
         parameters: {
             query?: never;
@@ -1716,6 +2236,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListEnrollmentResponse"];
+                };
+            };
+        };
+    };
+    myCertificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCertificateResponse"];
                 };
             };
         };
@@ -1768,6 +2308,28 @@ export interface operations {
             };
         };
     };
+    listTests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTestListItemResponse"];
+                };
+            };
+        };
+    };
     getProgress: {
         parameters: {
             query?: never;
@@ -1786,6 +2348,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCourseProgressResponse"];
+                };
+            };
+        };
+    };
+    verifyCertificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serial: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCertificateVerifyResponse"];
                 };
             };
         };
@@ -1878,6 +2462,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListAdminLoanResponse"];
+                };
+            };
+        };
+    };
+    getTest_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminTestDetailResponse"];
                 };
             };
         };

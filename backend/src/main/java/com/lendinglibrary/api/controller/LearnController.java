@@ -1,19 +1,20 @@
 package com.lendinglibrary.api.controller;
 
-import com.lendinglibrary.api.dto.CourseDetailResponse;
-import com.lendinglibrary.api.dto.CourseProgressResponse;
-import com.lendinglibrary.api.dto.CourseSummaryResponse;
-import com.lendinglibrary.api.dto.EnrollmentResponse;
+import com.lendinglibrary.api.dto.*;
 import com.lendinglibrary.api.envelope.ApiResponse;
 import com.lendinglibrary.api.envelope.PagedResponse;
+import com.lendinglibrary.application.service.AttemptService;
+import com.lendinglibrary.application.service.CertificateService;
 import com.lendinglibrary.application.service.CourseService;
 import com.lendinglibrary.application.service.EnrollmentService;
 import com.lendinglibrary.application.service.LessonProgressService;
+import com.lendinglibrary.application.service.TestService;
 import com.lendinglibrary.domain.enums.CourseLevel;
 import com.lendinglibrary.domain.enums.CourseTrack;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,9 @@ public class LearnController {
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
     private final LessonProgressService lessonProgressService;
+    private final TestService testService;
+    private final AttemptService attemptService;
+    private final CertificateService certificateService;
 
     @GetMapping("/courses")
     @Operation(summary = "Browse published courses with optional filters")
@@ -85,5 +89,55 @@ public class LearnController {
             @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(ApiResponse.ok(
                 lessonProgressService.completeLesson(id, user.getUsername()), "Lesson completed"));
+    }
+
+    @GetMapping("/courses/{id}/tests")
+    @Operation(summary = "List this course's tests with the current user's attempt status")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<List<TestListItemResponse>>> listTests(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(testService.listForLearner(id, user.getUsername())));
+    }
+
+    @GetMapping("/tests/{id}")
+    @Operation(summary = "Get a test's questions for taking it (no answer key)")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<TestForLearnerResponse>> getTest(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(testService.getForLearner(id, user.getUsername())));
+    }
+
+    @PostMapping("/tests/{id}/attempts")
+    @Operation(summary = "Start a new attempt at a test")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<AttemptStartResponse>> startAttempt(
+            @PathVariable UUID id, @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(
+                attemptService.startAttempt(id, user.getUsername()), "Attempt started"));
+    }
+
+    @PostMapping("/attempts/{id}/submit")
+    @Operation(summary = "Submit answers for an attempt and get the scored result")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<AttemptResultResponse>> submitAttempt(
+            @PathVariable UUID id, @Valid @RequestBody AttemptSubmitRequest req,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                attemptService.submitAttempt(id, req, user.getUsername()), "Attempt submitted"));
+    }
+
+    @GetMapping("/me/certificates")
+    @Operation(summary = "List the current user's earned certificates")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<List<CertificateResponse>>> myCertificates(
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(certificateService.myCertificates(user.getUsername())));
+    }
+
+    @GetMapping("/certificates/{serial}")
+    @Operation(summary = "Publicly verify a certificate by its serial")
+    public ResponseEntity<ApiResponse<CertificateVerifyResponse>> verifyCertificate(
+            @PathVariable String serial) {
+        return ResponseEntity.ok(ApiResponse.ok(certificateService.verify(serial)));
     }
 }

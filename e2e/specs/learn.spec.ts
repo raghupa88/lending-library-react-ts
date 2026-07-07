@@ -144,7 +144,7 @@ authTest("dashboard My learning tab lists enrollments", async ({ authenticatedPa
   await page.goto('/dashboard');
   await page.getByRole('tab', { name: /my learning/i }).click();
   await authExpect(
-    page.getByRole('link', { name: /money foundations/i }),
+    page.getByRole('link', { name: 'Money Foundations', exact: true }),
   ).toBeVisible();
 });
 
