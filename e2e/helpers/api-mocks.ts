@@ -51,6 +51,10 @@ import {
   MOCK_ADMIN_BATCH_DETAIL,
   MOCK_ATTENDANCE_MARKED,
   MOCK_ADMIN_ANALYTICS,
+  MOCK_MY_RESERVATIONS_EMPTY,
+  MOCK_JOIN_WAITLIST_SUCCESS,
+  MOCK_CANCEL_RESERVATION_SUCCESS,
+  MOCK_CLAIM_RESERVATION_SUCCESS,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -362,6 +366,22 @@ export async function setupAdminAnalyticsApiMocks(page: Page, analytics: unknown
   await page.route(`${API_BASE}/admin/learn/analytics`, (route) => route.fulfill(fulfill(analytics)));
 }
 
+export async function setupReservationsApiMocks(
+  page: Page,
+  {
+    list = MOCK_MY_RESERVATIONS_EMPTY,
+    join = MOCK_JOIN_WAITLIST_SUCCESS,
+    cancel = MOCK_CANCEL_RESERVATION_SUCCESS,
+    claim = MOCK_CLAIM_RESERVATION_SUCCESS,
+  }: { list?: unknown; join?: unknown; cancel?: unknown; claim?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/reservations/*/claim`, (route) => route.fulfill(fulfill(claim)));
+  await page.route(`${API_BASE}/reservations/*`, (route) => route.fulfill(fulfill(cancel)));
+  await page.route(`${API_BASE}/reservations`, (route) =>
+    route.fulfill(fulfill(route.request().method() === 'POST' ? join : list)),
+  );
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -375,4 +395,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupLearnApiMocks(page);
   await setupTestsApiMocks(page);
   await setupBatchesApiMocks(page);
+  await setupReservationsApiMocks(page);
 }

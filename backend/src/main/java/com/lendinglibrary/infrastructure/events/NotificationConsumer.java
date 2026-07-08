@@ -49,6 +49,11 @@ public class NotificationConsumer {
         handle(payload, this::notifyForCourseEvent);
     }
 
+    @KafkaListener(topics = Topics.BOOK_EVENTS, groupId = "notifications")
+    public void onBookEvent(String payload) {
+        handle(payload, this::notifyForBookEvent);
+    }
+
     private void handle(String payload, java.util.function.Consumer<DomainEvent> action) {
         DomainEvent event;
         try {
@@ -126,6 +131,22 @@ public class NotificationConsumer {
             }
         }
         saveAndEmail(user, event.type(), title, body);
+    }
+
+    private void notifyForBookEvent(DomainEvent event) {
+        if (!"reservation.ready".equals(event.type())) {
+            // book.updated (admin edits) has no notification recipient concept; ignore it here.
+            return;
+        }
+        String userEmail = (String) event.data().get("userEmail");
+        String bookTitle = (String) event.data().get("bookTitle");
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) return;
+
+        saveAndEmail(user, event.type(),
+                "\"" + bookTitle + "\" is ready for pickup",
+                "Your reserved copy is being held until " + event.data().get("holdExpiresAt")
+                        + " — claim it from your dashboard before then.");
     }
 
     private void saveAndEmail(User user, String type, String title, String body) {

@@ -3,6 +3,7 @@ package com.lendinglibrary.service;
 import com.lendinglibrary.api.dto.LoanRequest;
 import com.lendinglibrary.application.service.BookService;
 import com.lendinglibrary.application.service.LoanService;
+import com.lendinglibrary.application.service.ReservationService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.Book;
 import com.lendinglibrary.domain.entity.Loan;
@@ -45,6 +46,7 @@ class LoanServiceTest {
     @Mock UserService userService;
     @Mock SubscriptionRepository subscriptionRepository;
     @Mock DomainEventPublisher events;
+    @Mock ReservationService reservationService;
     @InjectMocks LoanService loanService;
 
     private User user;
@@ -112,5 +114,33 @@ class LoanServiceTest {
         assertThatThrownBy(() -> loanService.borrow(req, "member@example.com"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Loan limit reached");
+    }
+
+    @Test
+    void returnBook_success_incrementsStockAndPromotesWaitlist() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(1)).dueDate(LocalDateTime.now().plusDays(13))
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = loanService.returnBook(loan.getId(), "member@example.com");
+
+        assertThat(result.status()).isEqualTo("RETURNED");
+        assertThat(book.getAvailableCopies()).isEqualTo(3);
+        verify(events).publish(eq(Topics.LOAN_EVENTS), eq("loan.returned"), any(), any(Map.class));
+        verify(reservationService).promoteNextWaiting(book);
+    }
+
+    @Test
+    void returnBook_alreadyReturned_throws() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(5)).dueDate(LocalDateTime.now().plusDays(9))
+                .returnedAt(LocalDateTime.now()).status(LoanStatus.RETURNED).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+
+        assertThatThrownBy(() -> loanService.returnBook(loan.getId(), "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already returned");
     }
 }

@@ -2,6 +2,11 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, BookMarked, Star } from "lucide-react";
 import { useBookQuery } from "../../features/books/queries";
 import { useBorrowBook, useMyLoansQuery, DEFAULT_LOAN_DAYS } from "../../features/loans/queries";
+import {
+  useMyReservationsQuery,
+  useJoinWaitlist,
+  useCancelReservation,
+} from "../../features/reservations/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
@@ -21,9 +26,15 @@ export default function BookDetail() {
   const location = useLocation();
   const borrowBook = useBorrowBook();
   const { data: loans } = useMyLoansQuery(Boolean(user));
+  const { data: reservations } = useMyReservationsQuery(Boolean(user));
+  const joinWaitlist = useJoinWaitlist();
+  const cancelReservation = useCancelReservation();
 
   const alreadyBorrowed = Boolean(
     loans?.some((l) => l.bookId === id && !l.returnedAt),
+  );
+  const myReservation = reservations?.find(
+    (r) => r.bookId === id && (r.status === "WAITING" || r.status === "READY_FOR_PICKUP"),
   );
 
   const handleBorrow = () => {
@@ -55,6 +66,27 @@ export default function BookDetail() {
           ) : undefined,
         );
       },
+    });
+  };
+
+  const handleJoinWaitlist = () => {
+    if (!user || !id) {
+      navigate(`/login?returnTo=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    joinWaitlist.mutate(id, {
+      onSuccess: () => toast("success", "You're on the waitlist — we'll email you when a copy is held for you."),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't join the waitlist"),
+    });
+  };
+
+  const handleLeaveWaitlist = () => {
+    if (!myReservation) return;
+    cancelReservation.mutate(myReservation.id, {
+      onSuccess: () => toast("success", "You've left the waitlist"),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't leave the waitlist"),
     });
   };
 
@@ -141,6 +173,47 @@ export default function BookDetail() {
                 </p>
               )}
             </div>
+
+            {!book.available && !alreadyBorrowed && (
+              <div className="mt-4">
+                {!myReservation && (
+                  <Button
+                    variant="secondary"
+                    disabled={joinWaitlist.isPending}
+                    onClick={handleJoinWaitlist}
+                  >
+                    {joinWaitlist.isPending ? "Joining…" : "Join the waitlist"}
+                  </Button>
+                )}
+                {myReservation?.status === "WAITING" && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <Badge variant="outline">You're on the waitlist</Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={cancelReservation.isPending}
+                      onClick={handleLeaveWaitlist}
+                    >
+                      Leave waitlist
+                    </Button>
+                  </div>
+                )}
+                {myReservation?.status === "READY_FOR_PICKUP" && (
+                  <div className="mt-2 space-y-2">
+                    <Badge variant="success">A copy is being held for you</Badge>
+                    <p className="text-sm text-muted">
+                      Claim it from your dashboard before the hold expires.
+                    </p>
+                    <Link
+                      to="/dashboard"
+                      className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
+                    >
+                      Go to dashboard
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
 
             {book.description && (
               <p className="mt-6 max-w-prose leading-relaxed text-muted">{book.description}</p>
