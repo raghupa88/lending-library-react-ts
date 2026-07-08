@@ -169,6 +169,8 @@ export const MOCK_LOANS = {
       returnedAt: null,
       status: 'ACTIVE',
       renewed: false,
+      lateFeeOrderId: null,
+      lateFeeAmount: null,
     },
     {
       id: 'loan-2',
@@ -181,6 +183,8 @@ export const MOCK_LOANS = {
       returnedAt: null,
       status: 'ACTIVE',
       renewed: false,
+      lateFeeOrderId: null,
+      lateFeeAmount: null,
     },
     {
       id: 'loan-3',
@@ -193,6 +197,8 @@ export const MOCK_LOANS = {
       returnedAt: daysFromNow(-28),
       status: 'RETURNED',
       renewed: false,
+      lateFeeOrderId: null,
+      lateFeeAmount: null,
     },
   ],
 };
@@ -212,6 +218,8 @@ export const MOCK_BORROW_SUCCESS = {
     returnedAt: null,
     status: 'ACTIVE',
     renewed: false,
+    lateFeeOrderId: null,
+    lateFeeAmount: null,
   },
 };
 
@@ -223,6 +231,17 @@ export const MOCK_BORROW_LIMIT_FAILURE = {
 export const MOCK_RETURN_SUCCESS = {
   success: true,
   data: { ...MOCK_LOANS.data[0], returnedAt: daysFromNow(0), status: 'RETURNED' },
+};
+
+export const MOCK_RETURN_WITH_LATE_FEE = {
+  success: true,
+  data: {
+    ...MOCK_LOANS.data[0],
+    returnedAt: daysFromNow(0),
+    status: 'RETURNED',
+    lateFeeOrderId: 'order-late-fee-1',
+    lateFeeAmount: 20,
+  },
 };
 
 export const MOCK_RENEW_SUCCESS = {
@@ -1059,4 +1078,27 @@ export const MOCK_ADMIN_ANALYTICS_EMPTY = {
     revenueByCourse: [],
     attendanceRatePercent: 0,
   },
+};
+
+// --- Orders (backend OrderResponse.java) — currently used only for late fees ---
+
+export const MOCK_ORDER_PENDING = {
+  id: 'order-late-fee-1',
+  totalAmount: 20,
+  status: 'pending',
+  notes: 'Late fee — 2 day(s) overdue returning "The Great Gatsby"',
+  createdAt: daysFromNow(0),
+};
+
+export const MOCK_MY_ORDERS_EMPTY = { success: true, data: [] };
+export const MOCK_MY_ORDERS_PENDING = { success: true, data: [MOCK_ORDER_PENDING] };
+
+export const MOCK_PAY_ORDER_SUCCESS = {
+  success: true,
+  data: { ...MOCK_ORDER_PENDING, status: 'completed' },
+};
+
+export const MOCK_PAY_ORDER_DECLINED_FAILURE = {
+  success: false,
+  error: 'Your card was declined',
 };

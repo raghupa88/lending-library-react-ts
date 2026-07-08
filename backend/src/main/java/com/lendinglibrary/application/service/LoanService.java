@@ -3,20 +3,26 @@ package com.lendinglibrary.application.service;
 import com.lendinglibrary.api.dto.LoanRequest;
 import com.lendinglibrary.api.dto.LoanResponse;
 import com.lendinglibrary.domain.entity.Loan;
+import com.lendinglibrary.domain.entity.Order;
 import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.LoanStatus;
+import com.lendinglibrary.domain.enums.OrderStatus;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.LoanRepository;
+import com.lendinglibrary.infrastructure.persistence.OrderRepository;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,11 +34,15 @@ public class LoanService {
     private static final int RENEWAL_EXTENSION_DAYS = 14;
 
     private final LoanRepository loanRepository;
+    private final OrderRepository orderRepository;
     private final BookService bookService;
     private final UserService userService;
     private final SubscriptionRepository subscriptionRepository;
     private final DomainEventPublisher events;
     private final ReservationService reservationService;
+
+    @Value("${late-fees.per-day-amount:10.00}")
+    private BigDecimal lateFeePerDay;
 
     public List<LoanResponse> getUserLoans(String email) {
         User user = userService.findByEmail(email);
@@ -108,7 +118,38 @@ public class LoanService {
         // circulation — see ReservationService for why.
         reservationService.promoteNextWaiting(loan.getBook());
 
+        Order lateFeeOrder = chargeLateFeeIfOverdue(loan);
+        if (lateFeeOrder != null) {
+            return LoanResponse.from(loan, lateFeeOrder.getId(), lateFeeOrder.getTotalAmount());
+        }
         return LoanResponse.from(loan);
+    }
+
+    /**
+     * A day late by even an hour still counts as a full day (whole-day
+     * comparison, not elapsed-time), capped at the book's own purchase
+     * price so a badly overdue paperback never costs more than replacing
+     * it outright — the fee is recorded as a PENDING Order rather than
+     * charged immediately, since there's no card-on-file to auto-bill;
+     * the member pays it off through the usual checkout flow.
+     */
+    private Order chargeLateFeeIfOverdue(Loan loan) {
+        long overdueDays = ChronoUnit.DAYS.between(
+                loan.getDueDate().toLocalDate(), loan.getReturnedAt().toLocalDate());
+        if (overdueDays <= 0) {
+            return null;
+        }
+
+        BigDecimal fee = lateFeePerDay.multiply(BigDecimal.valueOf(overdueDays))
+                .min(loan.getBook().getPurchasePrice());
+
+        return orderRepository.save(Order.builder()
+                .user(loan.getUser())
+                .totalAmount(fee)
+                .status(OrderStatus.PENDING)
+                .notes("Late fee — " + overdueDays + " day(s) overdue returning \""
+                        + loan.getBook().getTitle() + "\"")
+                .build());
     }
 
     @Transactional

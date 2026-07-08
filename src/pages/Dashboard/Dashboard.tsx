@@ -22,6 +22,7 @@ import {
   useCancelReservation,
   useClaimReservation,
 } from "../../features/reservations/queries";
+import { useMyOrdersQuery, usePayOrder } from "../../features/orders/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -32,6 +33,8 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
 import { Tabs, TabPanel } from "../../components/ui/tabs";
 import { useToast } from "../../components/ui/toast";
+import { CheckoutDialog } from "../../components/payments/CheckoutDialog";
+import type { PaymentInput } from "../../lib/payment";
 import { ApiError } from "../../lib/api";
 import { cn } from "../../lib/cn";
 
@@ -60,25 +63,50 @@ export default function Dashboard() {
   const { data: certificates } = useMyCertificatesQuery(Boolean(user));
   const { data: bookings } = useMyBookingsQuery(Boolean(user));
   const { data: reservations } = useMyReservationsQuery(Boolean(user));
+  const { data: orders } = useMyOrdersQuery(Boolean(user));
   const returnBook = useReturnBook();
   const renewLoan = useRenewLoan();
   const cancelBooking = useCancelBooking();
   const cancelReservation = useCancelReservation();
   const claimReservation = useClaimReservation();
+  const payOrder = usePayOrder();
+  const [payingOrder, setPayingOrder] = useState<{ id: string; amount: number } | null>(null);
 
   if (!user) return null;
 
   const activeLoans = (loans ?? []).filter((l) => !l.returnedAt);
   const pastLoans = (loans ?? []).filter((l) => Boolean(l.returnedAt));
   const dueSoon = activeLoans.filter((l) => daysUntilDue(l) <= 2).length;
+  const pendingOrders = (orders ?? []).filter((o) => o.status === "pending");
   const firstName = user.name.split(" ")[0];
 
   const handleReturn = (loan: Loan) => {
     returnBook.mutate(loan.id, {
-      onSuccess: () => toast("success", `Returned "${loan.bookTitle}" — happy next read!`),
+      onSuccess: (returned) => {
+        if (returned.lateFeeOrderId && returned.lateFeeAmount) {
+          const orderId = returned.lateFeeOrderId;
+          const amount = returned.lateFeeAmount;
+          toast(
+            "error",
+            `Returned "${loan.bookTitle}" — this was overdue, so a ₹${amount.toFixed(2)} late fee was added.`,
+            <Button size="sm" variant="secondary" onClick={() => setPayingOrder({ id: orderId, amount })}>
+              Pay now
+            </Button>,
+          );
+        } else {
+          toast("success", `Returned "${loan.bookTitle}" — happy next read!`);
+        }
+      },
       onError: (err) =>
         toast("error", err instanceof ApiError ? err.message : "Couldn't return the book"),
     });
+  };
+
+  const handlePaySubmit = async (payment: PaymentInput) => {
+    if (!payingOrder) return;
+    await payOrder.mutateAsync({ orderId: payingOrder.id, payment });
+    toast("success", "Late fee paid — thanks for settling up!");
+    setPayingOrder(null);
   };
 
   const handleRenew = (loan: Loan) => {
@@ -153,6 +181,31 @@ export default function Dashboard() {
           icon={<History aria-hidden="true" />}
         />
       </div>
+
+      {pendingOrders.length > 0 && (
+        <Card className="mt-6 border-danger/30 bg-danger/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+              <p className="font-medium text-danger">
+                {pendingOrders.length === 1
+                  ? "You have an outstanding late fee"
+                  : `You have ${pendingOrders.length} outstanding late fees`}
+              </p>
+              <p className="text-sm text-muted">
+                Total due: ₹{pendingOrders.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() =>
+                setPayingOrder({ id: pendingOrders[0].id, amount: pendingOrders[0].totalAmount })
+              }
+            >
+              Pay now
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <section>
@@ -478,6 +531,15 @@ export default function Dashboard() {
           </Card>
         </aside>
       </div>
+
+      {payingOrder && (
+        <CheckoutDialog
+          title="Pay late fee"
+          amount={payingOrder.amount}
+          onClose={() => setPayingOrder(null)}
+          onSubmit={handlePaySubmit}
+        />
+      )}
     </div>
   );
 }

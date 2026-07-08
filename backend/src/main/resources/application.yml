@@ -75,6 +75,10 @@ reservations:
   hold-hours: ${RESERVATION_HOLD_HOURS:72}
   expiry-sweep-interval-ms: ${RESERVATION_EXPIRY_SWEEP_MS:3600000}
 
+late-fees:
+  # Capped per-loan at the book's own purchase price — see LoanService.
+  per-day-amount: ${LATE_FEE_PER_DAY_AMOUNT:10.00}
+
 logging:
   level:
     root: INFO
