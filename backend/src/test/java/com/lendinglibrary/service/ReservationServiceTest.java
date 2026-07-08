@@ -224,6 +224,22 @@ class ReservationServiceTest {
     }
 
     @Test
+    void hasActiveQueue_true_whenWaitingOrReadyReservationsExist() {
+        when(reservationRepository.existsByBookAndStatusIn(book,
+                List.of(ReservationStatus.WAITING, ReservationStatus.READY_FOR_PICKUP))).thenReturn(true);
+
+        assertThat(reservationService.hasActiveQueue(book)).isTrue();
+    }
+
+    @Test
+    void hasActiveQueue_false_whenNoneActive() {
+        when(reservationRepository.existsByBookAndStatusIn(book,
+                List.of(ReservationStatus.WAITING, ReservationStatus.READY_FOR_PICKUP))).thenReturn(false);
+
+        assertThat(reservationService.hasActiveQueue(book)).isFalse();
+    }
+
+    @Test
     void promoteNextWaiting_noOneWaiting_isANoOp() {
         when(reservationRepository.findByBookAndStatusOrderByReservedAtAsc(book, ReservationStatus.WAITING))
                 .thenReturn(List.of());

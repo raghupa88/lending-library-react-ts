@@ -8,6 +8,7 @@ import {
   MOCK_LOANS,
   MOCK_BORROW_SUCCESS,
   MOCK_RETURN_SUCCESS,
+  MOCK_RENEW_SUCCESS,
   MOCK_PLANS,
   MOCK_SUBSCRIPTION_BASIC,
   MOCK_SUBSCRIBE_STANDARD_SUCCESS,
@@ -102,10 +103,14 @@ export async function setupLoansApiMock(
     list = MOCK_LOANS,
     borrow = MOCK_BORROW_SUCCESS,
     returned = MOCK_RETURN_SUCCESS,
-  }: { list?: unknown; borrow?: unknown; returned?: unknown } = {},
+    renewed = MOCK_RENEW_SUCCESS,
+  }: { list?: unknown; borrow?: unknown; returned?: unknown; renewed?: unknown } = {},
 ) {
   await page.route(`${API_BASE}/loans/*/return`, (route) =>
     route.fulfill(fulfill(returned)),
+  );
+  await page.route(`${API_BASE}/loans/*/renew`, (route) =>
+    route.fulfill(fulfill(renewed)),
   );
   await page.route(`${API_BASE}/loans`, (route) =>
     route.fulfill(fulfill(route.request().method() === 'POST' ? borrow : list)),

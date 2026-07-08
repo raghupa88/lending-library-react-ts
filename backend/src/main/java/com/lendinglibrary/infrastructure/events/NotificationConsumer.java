@@ -86,6 +86,9 @@ public class NotificationConsumer {
         if ("loan.created".equals(event.type())) {
             title = "You borrowed \"" + bookTitle + "\"";
             body = "Due back on " + event.data().get("dueDate") + ". Happy reading!";
+        } else if ("loan.renewed".equals(event.type())) {
+            title = "Renewed \"" + bookTitle + "\"";
+            body = "New due date: " + event.data().get("dueDate") + ".";
         } else {
             title = "You returned \"" + bookTitle + "\"";
             body = "Thanks for returning it on time — browse the shelf for your next read.";

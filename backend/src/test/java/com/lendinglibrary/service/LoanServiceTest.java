@@ -143,4 +143,86 @@ class LoanServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already returned");
     }
+
+    @Test
+    void renew_success_extendsDueDateFromCurrentDueDate() {
+        LocalDateTime originalDueDate = LocalDateTime.now().plusDays(3);
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(11)).dueDate(originalDueDate)
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(reservationService.hasActiveQueue(book)).thenReturn(false);
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = loanService.renew(loan.getId(), "member@example.com");
+
+        assertThat(result.renewed()).isTrue();
+        assertThat(loan.getDueDate()).isEqualTo(originalDueDate.plusDays(14));
+        verify(events).publish(eq(Topics.LOAN_EVENTS), eq("loan.renewed"), any(), any(Map.class));
+    }
+
+    @Test
+    void renew_overdueLoan_extendsFromNowInsteadOfPastDueDate() {
+        LocalDateTime pastDueDate = LocalDateTime.now().minusDays(2);
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(16)).dueDate(pastDueDate)
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(reservationService.hasActiveQueue(book)).thenReturn(false);
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        loanService.renew(loan.getId(), "member@example.com");
+
+        assertThat(loan.getDueDate()).isAfter(LocalDateTime.now().plusDays(13));
+    }
+
+    @Test
+    void renew_alreadyRenewed_throws() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(1)).dueDate(LocalDateTime.now().plusDays(13))
+                .status(LoanStatus.ACTIVE).renewed(true).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+
+        assertThatThrownBy(() -> loanService.renew(loan.getId(), "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already been renewed");
+    }
+
+    @Test
+    void renew_returnedLoan_throws() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(5)).dueDate(LocalDateTime.now().minusDays(1))
+                .returnedAt(LocalDateTime.now()).status(LoanStatus.RETURNED).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+
+        assertThatThrownBy(() -> loanService.renew(loan.getId(), "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Only active loans");
+    }
+
+    @Test
+    void renew_activeWaitlist_throws() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(1)).dueDate(LocalDateTime.now().plusDays(13))
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(reservationService.hasActiveQueue(book)).thenReturn(true);
+
+        assertThatThrownBy(() -> loanService.renew(loan.getId(), "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("someone else is waiting");
+    }
+
+    @Test
+    void renew_wrongUser_throws() {
+        User otherUser = User.builder().id(UUID.randomUUID()).email("other@example.com").role(Role.MEMBER).build();
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(otherUser).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(1)).dueDate(LocalDateTime.now().plusDays(13))
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+
+        assertThatThrownBy(() -> loanService.renew(loan.getId(), "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("does not belong");
+    }
 }

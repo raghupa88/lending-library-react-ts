@@ -51,4 +51,13 @@ public class LoanController {
         return ResponseEntity.ok(ApiResponse.ok(
                 loanService.returnBook(id, user.getUsername()), "Book returned successfully"));
     }
+
+    @PutMapping("/{id}/renew")
+    @Operation(summary = "Renew a loan once, extending the due date")
+    public ResponseEntity<ApiResponse<LoanResponse>> renew(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                loanService.renew(id, user.getUsername()), "Loan renewed"));
+    }
 }

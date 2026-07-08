@@ -25,6 +25,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LoanService {
 
+    private static final int RENEWAL_EXTENSION_DAYS = 14;
+
     private final LoanRepository loanRepository;
     private final BookService bookService;
     private final UserService userService;
@@ -105,6 +107,43 @@ public class LoanService {
         // to them as a held reservation rather than back into general
         // circulation — see ReservationService for why.
         reservationService.promoteNextWaiting(loan.getBook());
+
+        return LoanResponse.from(loan);
+    }
+
+    @Transactional
+    public LoanResponse renew(UUID loanId, String email) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found: " + loanId));
+
+        if (!loan.getUser().getEmail().equals(email)) {
+            throw new BusinessException("This loan does not belong to the current user");
+        }
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new BusinessException("Only active loans can be renewed");
+        }
+        if (loan.isRenewed()) {
+            throw new BusinessException("This book has already been renewed once");
+        }
+        // A waiting reservation means someone's queued for this exact copy —
+        // letting it stay checked out longer would stall their turn.
+        if (reservationService.hasActiveQueue(loan.getBook())) {
+            throw new BusinessException("Can't renew — someone else is waiting for this book");
+        }
+
+        LocalDateTime base = loan.getDueDate().isBefore(LocalDateTime.now())
+                ? LocalDateTime.now() : loan.getDueDate();
+        loan.setDueDate(base.plusDays(RENEWAL_EXTENSION_DAYS));
+        loan.setRenewed(true);
+        loan = loanRepository.save(loan);
+
+        events.publish(Topics.LOAN_EVENTS, "loan.renewed", loan.getId().toString(), Map.of(
+                "userId", loan.getUser().getId().toString(),
+                "userEmail", loan.getUser().getEmail(),
+                "bookId", loan.getBook().getId().toString(),
+                "bookTitle", loan.getBook().getTitle(),
+                "dueDate", loan.getDueDate().toString()
+        ));
 
         return LoanResponse.from(loan);
     }

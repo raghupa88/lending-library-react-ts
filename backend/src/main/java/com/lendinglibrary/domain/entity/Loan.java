@@ -38,6 +38,10 @@ public class Loan {
     @Builder.Default
     private LoanStatus status = LoanStatus.ACTIVE;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean renewed = false;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
