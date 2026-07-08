@@ -102,9 +102,23 @@ public class NotificationConsumer {
         User user = userRepository.findByEmail(userEmail).orElse(null);
         if (user == null) return;
 
-        saveAndEmail(user, event.type(),
-                "You're now on the " + plan + " plan",
-                "Your subscription change is active immediately.");
+        String title;
+        String body;
+        switch (event.type()) {
+            case "subscription.paused" -> {
+                title = "Your " + plan + " subscription is paused";
+                body = "It'll resume automatically in a month, or you can resume it early anytime.";
+            }
+            case "subscription.resumed" -> {
+                title = "Your " + plan + " subscription is active again";
+                body = "Welcome back — your plan's perks are restored.";
+            }
+            default -> {
+                title = "You're now on the " + plan + " plan";
+                body = "Your subscription change is active immediately.";
+            }
+        }
+        saveAndEmail(user, event.type(), title, body);
     }
 
     private void notifyForCourseEvent(DomainEvent event) {

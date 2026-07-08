@@ -5,9 +5,13 @@ import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, UUID> {
     Optional<Subscription> findByUserAndStatus(User user, SubscriptionStatus status);
+    Optional<Subscription> findByUserAndStatusIn(User user, List<SubscriptionStatus> statuses);
+    List<Subscription> findByStatusAndPausedUntilBefore(SubscriptionStatus status, LocalDateTime cutoff);
 }

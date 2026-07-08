@@ -326,6 +326,7 @@ export const MOCK_SUBSCRIPTION_BASIC = {
     endDate: null,
     status: 'active',
     maxConcurrentLoans: 2,
+    pausedUntil: null,
   },
 };
 
@@ -339,7 +340,20 @@ export const MOCK_SUBSCRIBE_STANDARD_SUCCESS = {
     endDate: null,
     status: 'active',
     maxConcurrentLoans: 4,
+    pausedUntil: null,
   },
+};
+
+export const MOCK_SUBSCRIPTION_PAUSED = {
+  success: true,
+  data: { ...MOCK_SUBSCRIPTION_BASIC.data, status: 'paused', pausedUntil: daysFromNow(30) },
+};
+
+export const MOCK_PAUSE_SUBSCRIPTION_SUCCESS = { success: true, data: MOCK_SUBSCRIPTION_PAUSED.data };
+
+export const MOCK_RESUME_SUBSCRIPTION_SUCCESS = {
+  success: true,
+  data: { ...MOCK_SUBSCRIPTION_BASIC.data, status: 'active', pausedUntil: null },
 };
 
 // --- Users (backend UserResponse) ---

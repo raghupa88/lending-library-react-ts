@@ -43,6 +43,9 @@ public class Subscription {
     @Column(nullable = false)
     private Integer maxConcurrentLoans;
 
+    @Column(name = "paused_until")
+    private LocalDateTime pausedUntil;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
