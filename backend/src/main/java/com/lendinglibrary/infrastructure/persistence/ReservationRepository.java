@@ -15,4 +15,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findByUserOrderByReservedAtDesc(User user);
     List<Reservation> findByUserAndBookAndStatusIn(User user, Book book, List<ReservationStatus> statuses);
     List<Reservation> findByStatusAndHoldExpiresAtBefore(ReservationStatus status, LocalDateTime cutoff);
+    boolean existsByBookAndStatusIn(Book book, List<ReservationStatus> statuses);
 }

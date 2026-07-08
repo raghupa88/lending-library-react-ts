@@ -14,7 +14,8 @@ public record LoanResponse(
         LocalDateTime borrowedAt,
         LocalDateTime dueDate,
         LocalDateTime returnedAt,
-        String status
+        String status,
+        boolean renewed
 ) {
     public static LoanResponse from(Loan l) {
         return new LoanResponse(
@@ -26,7 +27,8 @@ public record LoanResponse(
                 l.getBorrowedAt(),
                 l.getDueDate(),
                 l.getReturnedAt(),
-                l.getStatus().name()
+                l.getStatus().name(),
+                l.isRenewed()
         );
     }
 }

@@ -168,6 +168,7 @@ export const MOCK_LOANS = {
       dueDate: daysFromNow(11),
       returnedAt: null,
       status: 'ACTIVE',
+      renewed: false,
     },
     {
       id: 'loan-2',
@@ -179,6 +180,7 @@ export const MOCK_LOANS = {
       dueDate: daysFromNow(1),
       returnedAt: null,
       status: 'ACTIVE',
+      renewed: false,
     },
     {
       id: 'loan-3',
@@ -190,6 +192,7 @@ export const MOCK_LOANS = {
       dueDate: daysFromNow(-26),
       returnedAt: daysFromNow(-28),
       status: 'RETURNED',
+      renewed: false,
     },
   ],
 };
@@ -208,6 +211,7 @@ export const MOCK_BORROW_SUCCESS = {
     dueDate: daysFromNow(14),
     returnedAt: null,
     status: 'ACTIVE',
+    renewed: false,
   },
 };
 
@@ -219,6 +223,26 @@ export const MOCK_BORROW_LIMIT_FAILURE = {
 export const MOCK_RETURN_SUCCESS = {
   success: true,
   data: { ...MOCK_LOANS.data[0], returnedAt: daysFromNow(0), status: 'RETURNED' },
+};
+
+export const MOCK_RENEW_SUCCESS = {
+  success: true,
+  data: { ...MOCK_LOANS.data[0], dueDate: daysFromNow(25), renewed: true },
+};
+
+export const MOCK_LOANS_ONE_RENEWED = {
+  success: true,
+  data: [{ ...MOCK_LOANS.data[0], renewed: true }, ...MOCK_LOANS.data.slice(1)],
+};
+
+export const MOCK_RENEW_ALREADY_RENEWED_FAILURE = {
+  success: false,
+  error: 'This book has already been renewed once',
+};
+
+export const MOCK_RENEW_ACTIVE_WAITLIST_FAILURE = {
+  success: false,
+  error: "Can't renew — someone else is waiting for this book",
 };
 
 // --- Reservations (backend ReservationResponse.java) — waitlist/hold for out-of-stock books ---

@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import {
   useMyLoansQuery,
   useReturnBook,
+  useRenewLoan,
   daysUntilDue,
   type Loan,
 } from "../../features/loans/queries";
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const { data: bookings } = useMyBookingsQuery(Boolean(user));
   const { data: reservations } = useMyReservationsQuery(Boolean(user));
   const returnBook = useReturnBook();
+  const renewLoan = useRenewLoan();
   const cancelBooking = useCancelBooking();
   const cancelReservation = useCancelReservation();
   const claimReservation = useClaimReservation();
@@ -76,6 +78,15 @@ export default function Dashboard() {
       onSuccess: () => toast("success", `Returned "${loan.bookTitle}" — happy next read!`),
       onError: (err) =>
         toast("error", err instanceof ApiError ? err.message : "Couldn't return the book"),
+    });
+  };
+
+  const handleRenew = (loan: Loan) => {
+    renewLoan.mutate(loan.id, {
+      onSuccess: (renewed) =>
+        toast("success", `Renewed "${loan.bookTitle}" — now due ${formatDate(renewed.dueDate)}.`),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't renew this loan"),
     });
   };
 
@@ -200,14 +211,28 @@ export default function Dashboard() {
                           <DueDateBadge loan={loan} />
                         </div>
                       </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={returnBook.isPending}
-                        onClick={() => handleReturn(loan)}
-                      >
-                        Return
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {loan.renewed ? (
+                          <Badge variant="outline">Renewed</Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={renewLoan.isPending}
+                            onClick={() => handleRenew(loan)}
+                          >
+                            Renew
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={returnBook.isPending}
+                          onClick={() => handleReturn(loan)}
+                        >
+                          Return
+                        </Button>
+                      </div>
                     </Card>
                   </li>
                 ))}

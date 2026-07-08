@@ -140,6 +140,12 @@ public class ReservationService {
                 .map(ReservationResponse::from).toList();
     }
 
+    /** Used by LoanService to block a renewal when someone's queued for this book. */
+    public boolean hasActiveQueue(Book book) {
+        return reservationRepository.existsByBookAndStatusIn(
+                book, List.of(ReservationStatus.WAITING, ReservationStatus.READY_FOR_PICKUP));
+    }
+
     /** Called by LoanService.returnBook once it has already put the returned copy back in the pool. */
     @Transactional
     public void promoteNextWaiting(Book book) {

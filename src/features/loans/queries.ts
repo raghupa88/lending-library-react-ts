@@ -12,6 +12,7 @@ export interface Loan {
   dueDate: string;
   returnedAt: string | null;
   status: "ACTIVE" | "RETURNED" | "OVERDUE";
+  renewed: boolean;
 }
 
 export const DEFAULT_LOAN_DAYS = 14;
@@ -44,6 +45,16 @@ export function useReturnBook() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["books"] });
+    },
+  });
+}
+
+export function useRenewLoan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (loanId: string) => api.put<Loan>(`/loans/${loanId}/renew`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
     },
   });
 }
