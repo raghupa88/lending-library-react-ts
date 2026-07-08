@@ -20,6 +20,7 @@ export interface Subscription {
   endDate: string | null;
   status: string;
   maxConcurrentLoans: number;
+  pausedUntil: string | null;
 }
 
 /** The backend uses Integer.MAX_VALUE for unlimited plans. */
@@ -57,6 +58,26 @@ export function useSubscribe() {
     // Backend expects the enum name (BASIC/STANDARD/PREMIUM/FAMILY)
     mutationFn: (planId: string) =>
       api.post<Subscription>("/subscriptions", { plan: planId.toUpperCase() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    },
+  });
+}
+
+export function usePauseSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<Subscription>("/subscriptions/pause"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    },
+  });
+}
+
+export function useResumeSubscription() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<Subscription>("/subscriptions/resume"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
     },

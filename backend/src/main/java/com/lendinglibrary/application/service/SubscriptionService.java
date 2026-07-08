@@ -6,11 +6,13 @@ import com.lendinglibrary.api.dto.SubscriptionResponse;
 import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
+import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,10 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class SubscriptionService {
+
+    private static final int PAUSE_MONTHS = 1;
+    private static final List<SubscriptionStatus> NON_TERMINAL =
+            List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED);
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserService userService;
@@ -38,9 +44,10 @@ public class SubscriptionService {
         );
     }
 
+    /** "Current" means the one non-terminal subscription (active or paused) — cancelled/expired ones aren't. */
     public SubscriptionResponse getCurrent(String email) {
         var user = userService.findByEmail(email);
-        return subscriptionRepository.findByUserAndStatus(user, SubscriptionStatus.ACTIVE)
+        return subscriptionRepository.findByUserAndStatusIn(user, NON_TERMINAL)
                 .map(SubscriptionResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("No active subscription found"));
     }
@@ -49,8 +56,9 @@ public class SubscriptionService {
     public SubscriptionResponse subscribe(SubscriptionRequest req, String email) {
         var user = userService.findByEmail(email);
 
-        // Cancel any existing active subscription
-        subscriptionRepository.findByUserAndStatus(user, SubscriptionStatus.ACTIVE)
+        // Cancel any existing non-terminal subscription (active or paused) —
+        // switching plans always starts a fresh one.
+        subscriptionRepository.findByUserAndStatusIn(user, NON_TERMINAL)
                 .ifPresent(s -> {
                     s.setStatus(SubscriptionStatus.CANCELLED);
                     s.setEndDate(LocalDateTime.now());
@@ -78,5 +86,59 @@ public class SubscriptionService {
         ));
 
         return SubscriptionResponse.from(sub);
+    }
+
+    /**
+     * Pausing suspends the plan's perks (loan limit falls back to the same
+     * default an unsubscribed member gets) without cancelling it outright —
+     * it resumes on its own after a month, or earlier via {@link #resume}.
+     */
+    @Transactional
+    public SubscriptionResponse pause(String email) {
+        var user = userService.findByEmail(email);
+        Subscription sub = subscriptionRepository.findByUserAndStatus(user, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("No active subscription to pause"));
+
+        sub.setStatus(SubscriptionStatus.PAUSED);
+        sub.setPausedUntil(LocalDateTime.now().plusMonths(PAUSE_MONTHS));
+        sub = subscriptionRepository.save(sub);
+
+        publishStatusEvent(sub, "subscription.paused");
+        return SubscriptionResponse.from(sub);
+    }
+
+    @Transactional
+    public SubscriptionResponse resume(String email) {
+        var user = userService.findByEmail(email);
+        Subscription sub = subscriptionRepository.findByUserAndStatus(user, SubscriptionStatus.PAUSED)
+                .orElseThrow(() -> new BusinessException("This subscription isn't paused"));
+
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setPausedUntil(null);
+        sub = subscriptionRepository.save(sub);
+
+        publishStatusEvent(sub, "subscription.resumed");
+        return SubscriptionResponse.from(sub);
+    }
+
+    @Scheduled(fixedDelayString = "${subscriptions.pause-sweep-interval-ms:3600000}")
+    @Transactional
+    public void resumeExpiredPauses() {
+        List<Subscription> due = subscriptionRepository
+                .findByStatusAndPausedUntilBefore(SubscriptionStatus.PAUSED, LocalDateTime.now());
+        for (Subscription sub : due) {
+            sub.setStatus(SubscriptionStatus.ACTIVE);
+            sub.setPausedUntil(null);
+            subscriptionRepository.save(sub);
+            publishStatusEvent(sub, "subscription.resumed");
+        }
+    }
+
+    private void publishStatusEvent(Subscription sub, String eventType) {
+        events.publish(Topics.SUBSCRIPTION_EVENTS, eventType, sub.getId().toString(), Map.of(
+                "userId", sub.getUser().getId().toString(),
+                "userEmail", sub.getUser().getEmail(),
+                "plan", sub.getPlan().name()
+        ));
     }
 }

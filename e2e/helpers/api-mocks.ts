@@ -12,6 +12,8 @@ import {
   MOCK_PLANS,
   MOCK_SUBSCRIPTION_BASIC,
   MOCK_SUBSCRIBE_STANDARD_SUCCESS,
+  MOCK_PAUSE_SUBSCRIPTION_SUCCESS,
+  MOCK_RESUME_SUBSCRIPTION_SUCCESS,
   MOCK_PROFILE,
   MOCK_PROFILE_UPDATED,
   MOCK_ADMIN_USERS,
@@ -125,13 +127,27 @@ export async function setupSubscriptionsApiMock(
     plans = MOCK_PLANS,
     current = MOCK_SUBSCRIPTION_BASIC,
     subscribe = MOCK_SUBSCRIBE_STANDARD_SUCCESS,
-  }: { plans?: unknown; current?: unknown; subscribe?: unknown } = {},
+    pause = MOCK_PAUSE_SUBSCRIPTION_SUCCESS,
+    resume = MOCK_RESUME_SUBSCRIPTION_SUCCESS,
+  }: {
+    plans?: unknown;
+    current?: unknown;
+    subscribe?: unknown;
+    pause?: unknown;
+    resume?: unknown;
+  } = {},
 ) {
   await page.route(`${API_BASE}/subscriptions/plans`, (route) =>
     route.fulfill(fulfill(plans)),
   );
   await page.route(`${API_BASE}/subscriptions/current`, (route) =>
     route.fulfill(fulfill(current)),
+  );
+  await page.route(`${API_BASE}/subscriptions/pause`, (route) =>
+    route.fulfill(fulfill(pause)),
+  );
+  await page.route(`${API_BASE}/subscriptions/resume`, (route) =>
+    route.fulfill(fulfill(resume)),
   );
   await page.route(`${API_BASE}/subscriptions`, (route) =>
     route.fulfill(fulfill(subscribe)),

@@ -13,6 +13,8 @@ import { DueDateBadge } from "../../features/loans/DueDateBadge";
 import {
   useCurrentSubscriptionQuery,
   formatMaxBooks,
+  usePauseSubscription,
+  useResumeSubscription,
 } from "../../features/subscriptions/queries";
 import { useMyEnrollmentsQuery } from "../../features/learn/queries";
 import { useMyCertificatesQuery } from "../../features/learn/tests-queries";
@@ -70,6 +72,8 @@ export default function Dashboard() {
   const cancelReservation = useCancelReservation();
   const claimReservation = useClaimReservation();
   const payOrder = usePayOrder();
+  const pauseSubscription = usePauseSubscription();
+  const resumeSubscription = useResumeSubscription();
   const [payingOrder, setPayingOrder] = useState<{ id: string; amount: number } | null>(null);
 
   if (!user) return null;
@@ -107,6 +111,22 @@ export default function Dashboard() {
     await payOrder.mutateAsync({ orderId: payingOrder.id, payment });
     toast("success", "Late fee paid — thanks for settling up!");
     setPayingOrder(null);
+  };
+
+  const handlePauseSubscription = () => {
+    pauseSubscription.mutate(undefined, {
+      onSuccess: () => toast("success", "Your subscription is paused — it'll resume automatically in a month."),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't pause your subscription"),
+    });
+  };
+
+  const handleResumeSubscription = () => {
+    resumeSubscription.mutate(undefined, {
+      onSuccess: () => toast("success", "Your subscription is active again — welcome back!"),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't resume your subscription"),
+    });
   };
 
   const handleRenew = (loan: Loan) => {
@@ -504,20 +524,48 @@ export default function Dashboard() {
             <CardContent>
               {subscription ? (
                 <div className="space-y-2 text-sm">
-                  <div className="font-display text-2xl font-semibold capitalize">
-                    {subscription.plan}
+                  <div className="flex items-center gap-2">
+                    <div className="font-display text-2xl font-semibold capitalize">
+                      {subscription.plan}
+                    </div>
+                    {subscription.status === "paused" && <Badge variant="warning">Paused</Badge>}
                   </div>
                   <p className="text-muted">
                     ₹{subscription.monthlyPrice}/month ·{" "}
                     {formatMaxBooks(subscription.maxConcurrentLoans).toLowerCase()}
                   </p>
-                  <p className="text-muted">Active since {formatDate(subscription.startDate)}</p>
-                  <Link
-                    to="/plans"
-                    className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "mt-2")}
-                  >
-                    Change plan
-                  </Link>
+                  {subscription.status === "paused" && subscription.pausedUntil ? (
+                    <p className="text-muted">
+                      Paused until {formatDate(subscription.pausedUntil)} — plan perks are on hold.
+                    </p>
+                  ) : (
+                    <p className="text-muted">Active since {formatDate(subscription.startDate)}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {subscription.status === "paused" ? (
+                      <Button
+                        size="sm"
+                        disabled={resumeSubscription.isPending}
+                        onClick={handleResumeSubscription}
+                      >
+                        Resume now
+                      </Button>
+                    ) : (
+                      <>
+                        <Link to="/plans" className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+                          Change plan
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={pauseSubscription.isPending}
+                          onClick={handlePauseSubscription}
+                        >
+                          Pause a month
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3 text-sm">

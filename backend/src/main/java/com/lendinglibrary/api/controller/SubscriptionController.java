@@ -48,4 +48,22 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.ok(
                 subscriptionService.subscribe(req, user.getUsername()), "Subscription updated"));
     }
+
+    @PostMapping("/pause")
+    @Operation(summary = "Pause the current subscription for a month")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<SubscriptionResponse>> pause(
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                subscriptionService.pause(user.getUsername()), "Subscription paused"));
+    }
+
+    @PostMapping("/resume")
+    @Operation(summary = "Resume a paused subscription early")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<SubscriptionResponse>> resume(
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                subscriptionService.resume(user.getUsername()), "Subscription resumed"));
+    }
 }
