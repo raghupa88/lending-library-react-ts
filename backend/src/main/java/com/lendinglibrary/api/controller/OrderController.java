@@ -2,6 +2,7 @@ package com.lendinglibrary.api.controller;
 
 import com.lendinglibrary.api.dto.OrderRequest;
 import com.lendinglibrary.api.dto.OrderResponse;
+import com.lendinglibrary.api.dto.PaymentInput;
 import com.lendinglibrary.api.envelope.ApiResponse;
 import com.lendinglibrary.application.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -40,5 +42,15 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(orderService.create(req, user.getUsername()), "Order created"));
+    }
+
+    @PostMapping("/{id}/pay")
+    @Operation(summary = "Pay an outstanding order (e.g. a late fee)")
+    public ResponseEntity<ApiResponse<OrderResponse>> pay(
+            @PathVariable UUID id,
+            @RequestBody PaymentInput payment,
+            @AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                orderService.pay(id, user.getUsername(), payment), "Payment successful"));
     }
 }

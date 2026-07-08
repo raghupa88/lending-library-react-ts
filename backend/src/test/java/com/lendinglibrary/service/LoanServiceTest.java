@@ -7,6 +7,7 @@ import com.lendinglibrary.application.service.ReservationService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.Book;
 import com.lendinglibrary.domain.entity.Loan;
+import com.lendinglibrary.domain.entity.Order;
 import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.LoanStatus;
@@ -14,9 +15,11 @@ import com.lendinglibrary.domain.enums.Role;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
+import com.lendinglibrary.domain.enums.OrderStatus;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.LoanRepository;
+import com.lendinglibrary.infrastructure.persistence.OrderRepository;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,7 +38,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +48,7 @@ import static org.mockito.Mockito.when;
 class LoanServiceTest {
 
     @Mock LoanRepository loanRepository;
+    @Mock OrderRepository orderRepository;
     @Mock BookService bookService;
     @Mock UserService userService;
     @Mock SubscriptionRepository subscriptionRepository;
@@ -55,6 +62,8 @@ class LoanServiceTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(loanService, "lateFeePerDay", new BigDecimal("10.00"));
+
         user = User.builder().id(UUID.randomUUID()).email("member@example.com")
                 .role(Role.MEMBER).build();
 
@@ -127,9 +136,68 @@ class LoanServiceTest {
         var result = loanService.returnBook(loan.getId(), "member@example.com");
 
         assertThat(result.status()).isEqualTo("RETURNED");
+        assertThat(result.lateFeeOrderId()).isNull();
         assertThat(book.getAvailableCopies()).isEqualTo(3);
         verify(events).publish(eq(Topics.LOAN_EVENTS), eq("loan.returned"), any(), any(Map.class));
         verify(reservationService).promoteNextWaiting(book);
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void returnBook_returnedOnDueDate_noLateFee() {
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(14)).dueDate(LocalDateTime.now())
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = loanService.returnBook(loan.getId(), "member@example.com");
+
+        assertThat(result.lateFeeOrderId()).isNull();
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void returnBook_overdue_createsLateFeeOrder() {
+        book.setPurchasePrice(new BigDecimal("1000.00"));
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(16)).dueDate(LocalDateTime.now().minusDays(2))
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(orderRepository.save(any())).thenAnswer(inv -> {
+            Order o = inv.getArgument(0);
+            o.setId(UUID.randomUUID());
+            return o;
+        });
+
+        var result = loanService.returnBook(loan.getId(), "member@example.com");
+
+        assertThat(result.lateFeeOrderId()).isNotNull();
+        assertThat(result.lateFeeAmount()).isEqualByComparingTo("20.00");
+        verify(orderRepository).save(argThat(o ->
+                o.getStatus() == OrderStatus.PENDING
+                        && o.getTotalAmount().compareTo(new BigDecimal("20.00")) == 0
+                        && o.getUser().equals(user)));
+    }
+
+    @Test
+    void returnBook_overdueFeeCappedAtBookPurchasePrice() {
+        book.setPurchasePrice(new BigDecimal("5.00"));
+        Loan loan = Loan.builder().id(UUID.randomUUID()).user(user).book(book)
+                .borrowedAt(LocalDateTime.now().minusDays(19)).dueDate(LocalDateTime.now().minusDays(5))
+                .status(LoanStatus.ACTIVE).build();
+        when(loanRepository.findById(loan.getId())).thenReturn(Optional.of(loan));
+        when(loanRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(orderRepository.save(any())).thenAnswer(inv -> {
+            Order o = inv.getArgument(0);
+            o.setId(UUID.randomUUID());
+            return o;
+        });
+
+        var result = loanService.returnBook(loan.getId(), "member@example.com");
+
+        assertThat(result.lateFeeAmount()).isEqualByComparingTo("5.00");
     }
 
     @Test

@@ -13,6 +13,9 @@ export interface Loan {
   returnedAt: string | null;
   status: "ACTIVE" | "RETURNED" | "OVERDUE";
   renewed: boolean;
+  /** Only set on the response to a return that incurred an overdue fee. */
+  lateFeeOrderId: string | null;
+  lateFeeAmount: number | null;
 }
 
 export const DEFAULT_LOAN_DAYS = 14;

@@ -56,6 +56,8 @@ import {
   MOCK_JOIN_WAITLIST_SUCCESS,
   MOCK_CANCEL_RESERVATION_SUCCESS,
   MOCK_CLAIM_RESERVATION_SUCCESS,
+  MOCK_MY_ORDERS_EMPTY,
+  MOCK_PAY_ORDER_SUCCESS,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -387,6 +389,14 @@ export async function setupReservationsApiMocks(
   );
 }
 
+export async function setupOrdersApiMocks(
+  page: Page,
+  { list = MOCK_MY_ORDERS_EMPTY, pay = MOCK_PAY_ORDER_SUCCESS }: { list?: unknown; pay?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/orders/*/pay`, (route) => route.fulfill(fulfill(pay)));
+  await page.route(`${API_BASE}/orders`, (route) => route.fulfill(fulfill(list)));
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -401,4 +411,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupTestsApiMocks(page);
   await setupBatchesApiMocks(page);
   await setupReservationsApiMocks(page);
+  await setupOrdersApiMocks(page);
 }
