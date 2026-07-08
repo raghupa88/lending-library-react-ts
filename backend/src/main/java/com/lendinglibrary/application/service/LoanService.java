@@ -30,6 +30,7 @@ public class LoanService {
     private final UserService userService;
     private final SubscriptionRepository subscriptionRepository;
     private final DomainEventPublisher events;
+    private final ReservationService reservationService;
 
     public List<LoanResponse> getUserLoans(String email) {
         User user = userService.findByEmail(email);
@@ -99,6 +100,11 @@ public class LoanService {
                 "bookId", loan.getBook().getId().toString(),
                 "bookTitle", loan.getBook().getTitle()
         ));
+
+        // If anyone's waiting for this book, the returned copy goes straight
+        // to them as a held reservation rather than back into general
+        // circulation — see ReservationService for why.
+        reservationService.promoteNextWaiting(loan.getBook());
 
         return LoanResponse.from(loan);
     }

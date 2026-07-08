@@ -221,6 +221,46 @@ export const MOCK_RETURN_SUCCESS = {
   data: { ...MOCK_LOANS.data[0], returnedAt: daysFromNow(0), status: 'RETURNED' },
 };
 
+// --- Reservations (backend ReservationResponse.java) — waitlist/hold for out-of-stock books ---
+
+export const MOCK_RESERVATION_WAITING = {
+  id: 'reservation-1',
+  bookId: 'book-2',
+  bookTitle: 'To Kill a Mockingbird',
+  bookCover: null,
+  status: 'WAITING',
+  reservedAt: daysFromNow(-1),
+  holdExpiresAt: null,
+};
+
+export const MOCK_RESERVATION_READY = {
+  ...MOCK_RESERVATION_WAITING,
+  id: 'reservation-2',
+  status: 'READY_FOR_PICKUP',
+  holdExpiresAt: daysFromNow(3),
+};
+
+export const MOCK_MY_RESERVATIONS_EMPTY = { success: true, data: [] };
+export const MOCK_MY_RESERVATIONS_WAITING = { success: true, data: [MOCK_RESERVATION_WAITING] };
+export const MOCK_MY_RESERVATIONS_READY = { success: true, data: [MOCK_RESERVATION_READY] };
+
+export const MOCK_JOIN_WAITLIST_SUCCESS = { success: true, data: MOCK_RESERVATION_WAITING };
+export const MOCK_CANCEL_RESERVATION_SUCCESS = { success: true, data: null };
+export const MOCK_CLAIM_RESERVATION_SUCCESS = {
+  success: true,
+  data: {
+    id: 'loan-claimed',
+    bookId: 'book-2',
+    bookTitle: 'To Kill a Mockingbird',
+    bookAuthor: 'Harper Lee',
+    bookCover: null,
+    borrowedAt: daysFromNow(0),
+    dueDate: daysFromNow(14),
+    returnedAt: null,
+    status: 'ACTIVE',
+  },
+};
+
 // --- Subscriptions (backend SubscriptionPlanResponse / SubscriptionResponse) ---
 
 export const MOCK_PLANS = {

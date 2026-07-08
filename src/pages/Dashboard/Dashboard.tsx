@@ -16,9 +16,15 @@ import {
 import { useMyEnrollmentsQuery } from "../../features/learn/queries";
 import { useMyCertificatesQuery } from "../../features/learn/tests-queries";
 import { useMyBookingsQuery, useCancelBooking } from "../../features/learn/batches-queries";
+import {
+  useMyReservationsQuery,
+  useCancelReservation,
+  useClaimReservation,
+} from "../../features/reservations/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { ProgressBar } from "../../components/ui/progress-bar";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -52,8 +58,11 @@ export default function Dashboard() {
   const { data: enrollments } = useMyEnrollmentsQuery(Boolean(user));
   const { data: certificates } = useMyCertificatesQuery(Boolean(user));
   const { data: bookings } = useMyBookingsQuery(Boolean(user));
+  const { data: reservations } = useMyReservationsQuery(Boolean(user));
   const returnBook = useReturnBook();
   const cancelBooking = useCancelBooking();
+  const cancelReservation = useCancelReservation();
+  const claimReservation = useClaimReservation();
 
   if (!user) return null;
 
@@ -79,6 +88,25 @@ export default function Dashboard() {
   };
 
   const activeBookings = (bookings ?? []).filter((b) => b.status !== "CANCELLED");
+  const activeReservations = (reservations ?? []).filter(
+    (r) => r.status === "WAITING" || r.status === "READY_FOR_PICKUP",
+  );
+
+  const handleCancelReservation = (reservationId: string, bookTitle: string) => {
+    cancelReservation.mutate(reservationId, {
+      onSuccess: () => toast("success", `Left the waitlist for "${bookTitle}"`),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't leave the waitlist"),
+    });
+  };
+
+  const handleClaimReservation = (reservationId: string, bookTitle: string) => {
+    claimReservation.mutate(reservationId, {
+      onSuccess: () => toast("success", `Borrowed "${bookTitle}" from your hold`),
+      onError: (err) =>
+        toast("error", err instanceof ApiError ? err.message : "Couldn't claim this hold"),
+    });
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -184,6 +212,62 @@ export default function Dashboard() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {activeReservations.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-muted uppercase tracking-wide">
+                  Your waitlist
+                </h3>
+                <ul className="mt-2 space-y-2">
+                  {activeReservations.map((reservation) => (
+                    <li key={reservation.id}>
+                      <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
+                        <Link
+                          to={`/books/${reservation.bookId}`}
+                          className="font-medium hover:text-accent"
+                        >
+                          {reservation.bookTitle}
+                        </Link>
+                        <div className="flex items-center gap-2">
+                          {reservation.status === "WAITING" ? (
+                            <>
+                              <Badge variant="outline">Waiting</Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={cancelReservation.isPending}
+                                onClick={() =>
+                                  handleCancelReservation(reservation.id, reservation.bookTitle)
+                                }
+                              >
+                                Leave waitlist
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Badge variant="success">Ready for pickup</Badge>
+                              <span className="text-xs text-muted">
+                                {reservation.holdExpiresAt &&
+                                  `Claim by ${formatDate(reservation.holdExpiresAt)}`}
+                              </span>
+                              <Button
+                                size="sm"
+                                disabled={claimReservation.isPending}
+                                onClick={() =>
+                                  handleClaimReservation(reservation.id, reservation.bookTitle)
+                                }
+                              >
+                                Claim
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </TabPanel>
 
