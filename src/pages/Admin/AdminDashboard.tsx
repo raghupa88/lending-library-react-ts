@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { BookOpen, BookMarked, AlertTriangle, Users } from "lucide-react";
+import { BookOpen, BookMarked, AlertTriangle, Users, TrendingUp } from "lucide-react";
 import { useBooksQuery } from "../../features/books/queries";
-import { useAdminLoansQuery, useAdminUsersQuery } from "../../features/admin/queries";
+import { useAdminLoansQuery, useAdminUsersQuery, useTrendingBooksQuery } from "../../features/admin/queries";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { EmptyState } from "../../components/ui/empty-state";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
@@ -14,6 +15,7 @@ export default function AdminDashboard() {
   const { data: books } = useBooksQuery({ size: 1 });
   const { data: loans } = useAdminLoansQuery();
   const { data: users } = useAdminUsersQuery();
+  const { data: trending } = useTrendingBooksQuery();
 
   const activeLoans = (loans ?? []).filter((l) => l.status !== "RETURNED");
   const overdue = (loans ?? []).filter((l) => l.status === "OVERDUE");
@@ -74,6 +76,35 @@ export default function AdminDashboard() {
                       <Badge variant="success">Active</Badge>
                     )}
                   </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="font-display">Trending books</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!trending || trending.length === 0 ? (
+            <EmptyState
+              icon={<TrendingUp aria-hidden="true" />}
+              title="No trend data yet"
+              description="Borrow counts build up over time — check back once members start borrowing."
+            />
+          ) : (
+            <ul className="divide-y divide-border">
+              {trending.map((book) => (
+                <li key={book.bookId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <div className="min-w-0">
+                    <span className="font-medium">{book.title}</span>
+                    <span className="text-muted"> by {book.author}</span>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {book.borrowCount} borrows
+                  </Badge>
                 </li>
               ))}
             </ul>

@@ -72,6 +72,12 @@
             <version>7.4</version>
         </dependency>
 
+        <!-- Cassandra: activity feed + counter stats (cassandra profile only) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-cassandra</artifactId>
+        </dependency>
+
         <!-- Events: Kafka publisher/consumer (kafka profile only) + Mailpit email -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
@@ -139,6 +145,11 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

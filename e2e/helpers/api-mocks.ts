@@ -67,6 +67,8 @@ import {
   MOCK_PURCHASE_ORGANIZATION_SUCCESS,
   MOCK_JOIN_ORGANIZATION_SUCCESS,
   MOCK_REMOVE_MEMBER_SUCCESS,
+  MOCK_ACTIVITY_EMPTY,
+  MOCK_TRENDING_BOOKS_EMPTY,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -176,12 +178,21 @@ export async function setupAdminApiMocks(
     users = MOCK_ADMIN_USERS,
     loans = MOCK_ADMIN_LOANS,
     bookSaved = MOCK_BOOK_CREATED,
-  }: { users?: unknown; loans?: unknown; bookSaved?: unknown } = {},
+    trending = MOCK_TRENDING_BOOKS_EMPTY,
+  }: { users?: unknown; loans?: unknown; bookSaved?: unknown; trending?: unknown } = {},
 ) {
   await page.route(`${API_BASE}/admin/users`, (route) => route.fulfill(fulfill(users)));
   await page.route(`${API_BASE}/admin/loans*`, (route) => route.fulfill(fulfill(loans)));
   await page.route(`${API_BASE}/admin/books`, (route) => route.fulfill(fulfill(bookSaved)));
   await page.route(`${API_BASE}/admin/books/*`, (route) => route.fulfill(fulfill(bookSaved)));
+  // Registered after the /admin/books/* wildcard above so it takes priority
+  // for this specific path — Playwright matches routes in reverse
+  // registration order (last registered wins).
+  await page.route(`${API_BASE}/admin/books/trending`, (route) => route.fulfill(fulfill(trending)));
+}
+
+export async function setupActivityApiMocks(page: Page, activity: unknown = MOCK_ACTIVITY_EMPTY) {
+  await page.route(`${API_BASE}/activity/me`, (route) => route.fulfill(fulfill(activity)));
 }
 
 export async function setupNotificationsApiMock(
@@ -472,4 +483,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupOrdersApiMocks(page);
   await setupGiftsApiMocks(page);
   await setupOrganizationsApiMocks(page);
+  await setupActivityApiMocks(page);
 }

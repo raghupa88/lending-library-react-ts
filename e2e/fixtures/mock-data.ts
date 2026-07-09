@@ -1242,3 +1242,37 @@ export const MOCK_PAY_ORDER_DECLINED_FAILURE = {
   success: false,
   error: 'Your card was declined',
 };
+
+// --- Activity feed (backend ActivityEntryResponse.java) + trending books
+// (backend TrendingBookResponse.java) — both empty unless the backend's
+// cassandra profile is active, see ADR-025 ---
+
+export const MOCK_ACTIVITY_EMPTY = { success: true, data: [] };
+
+export const MOCK_ACTIVITY = {
+  success: true,
+  data: [
+    {
+      eventId: 'event-1',
+      type: 'loan.created',
+      summary: 'Borrowed "The Great Gatsby"',
+      occurredAt: daysFromNow(0),
+    },
+    {
+      eventId: 'event-2',
+      type: 'subscription.changed',
+      summary: 'Subscribed to the PREMIUM plan',
+      occurredAt: daysFromNow(-2),
+    },
+  ],
+};
+
+export const MOCK_TRENDING_BOOKS_EMPTY = { success: true, data: [] };
+
+export const MOCK_TRENDING_BOOKS = {
+  success: true,
+  data: [
+    { bookId: 'book-1', title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', borrowCount: 12 },
+    { bookId: 'book-2', title: 'Siddhartha', author: 'Hermann Hesse', borrowCount: 7 },
+  ],
+};
