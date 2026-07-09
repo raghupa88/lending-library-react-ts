@@ -33,6 +33,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/organization" className="text-muted hover:text-foreground">
+                For schools & businesses
+              </Link>
+            </li>
+            <li>
               <Link to="/login" className="text-muted hover:text-foreground">
                 {t("footer.signIn")}
               </Link>

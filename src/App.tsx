@@ -23,6 +23,7 @@ import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Plans from "./pages/Plans/Plans";
 import GiftSubscription from "./pages/GiftSubscription/GiftSubscription";
+import Organization from "./pages/Organization/Organization";
 import Profile from "./pages/Profile/Profile";
 import NotFound from "./pages/NotFound/NotFound";
 
@@ -99,6 +100,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <GiftSubscription />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organization"
+          element={
+            <ProtectedRoute>
+              <Organization />
             </ProtectedRoute>
           }
         />

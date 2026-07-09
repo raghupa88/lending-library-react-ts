@@ -25,4 +25,5 @@ export interface RegisterData {
   address: string;
   referralCode?: string;
   giftCode?: string;
+  orgCode?: string;
 }
