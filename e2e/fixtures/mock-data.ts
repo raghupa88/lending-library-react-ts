@@ -384,6 +384,43 @@ export const MOCK_RESUME_SUBSCRIPTION_SUCCESS = {
   data: { ...MOCK_SUBSCRIPTION_BASIC.data, status: 'active', pausedUntil: null },
 };
 
+// --- Gift subscriptions (backend GiftSubscriptionResponse) ---
+
+export const MOCK_GIFT_PENDING = {
+  id: 'gift-1',
+  recipientEmail: 'friend@example.com',
+  plan: 'basic',
+  billingCycle: 'monthly',
+  giftCode: 'GIFTCODE1',
+  amountPaid: 199,
+  status: 'pending',
+  purchasedAt: daysFromNow(-2),
+  redeemedAt: null,
+};
+
+export const MOCK_GIFT_REDEEMED = {
+  ...MOCK_GIFT_PENDING,
+  id: 'gift-2',
+  giftCode: 'GIFTCODE2',
+  status: 'redeemed',
+  redeemedAt: daysFromNow(-1),
+};
+
+export const MOCK_PURCHASE_GIFT_SUCCESS = { success: true, data: MOCK_GIFT_PENDING };
+export const MOCK_MY_GIFTS_EMPTY = { success: true, data: [] };
+export const MOCK_MY_GIFTS = { success: true, data: [MOCK_GIFT_PENDING, MOCK_GIFT_REDEEMED] };
+
+export const MOCK_REDEEM_GIFT_SUCCESS = {
+  success: true,
+  data: { ...MOCK_SUBSCRIBE_STANDARD_SUCCESS.data, plan: 'premium', creditApplied: 0 },
+};
+export const MOCK_REDEEM_GIFT_FAILURE = { success: false, error: 'Unknown gift code' };
+
+export const MOCK_REGISTER_WITH_GIFT_SUCCESS = {
+  success: true,
+  data: { ...MOCK_USER, email: 'giftee@example.com', name: 'Giftee User', plan: 'premium' },
+};
+
 // --- Users (backend UserResponse) ---
 
 export const MOCK_PROFILE = {

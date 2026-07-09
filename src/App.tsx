@@ -22,6 +22,7 @@ import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Plans from "./pages/Plans/Plans";
+import GiftSubscription from "./pages/GiftSubscription/GiftSubscription";
 import Profile from "./pages/Profile/Profile";
 import NotFound from "./pages/NotFound/NotFound";
 
@@ -93,6 +94,14 @@ export default function App() {
         />
         <Route path="/certificates/:serial" element={<CertificateVerify />} />
         <Route path="/plans" element={<Plans />} />
+        <Route
+          path="/gift"
+          element={
+            <ProtectedRoute>
+              <GiftSubscription />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route

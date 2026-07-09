@@ -24,6 +24,12 @@ export const registerSchema = z
       .max(20, "Referral codes are shorter than that")
       .or(z.literal(""))
       .optional(),
+    giftCode: z
+      .string()
+      .trim()
+      .max(20, "Gift codes are shorter than that")
+      .or(z.literal(""))
+      .optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })

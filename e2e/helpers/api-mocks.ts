@@ -60,6 +60,9 @@ import {
   MOCK_CLAIM_RESERVATION_SUCCESS,
   MOCK_MY_ORDERS_EMPTY,
   MOCK_PAY_ORDER_SUCCESS,
+  MOCK_PURCHASE_GIFT_SUCCESS,
+  MOCK_MY_GIFTS_EMPTY,
+  MOCK_REDEEM_GIFT_SUCCESS,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -413,6 +416,19 @@ export async function setupOrdersApiMocks(
   await page.route(`${API_BASE}/orders`, (route) => route.fulfill(fulfill(list)));
 }
 
+export async function setupGiftsApiMocks(
+  page: Page,
+  {
+    purchase = MOCK_PURCHASE_GIFT_SUCCESS,
+    mine = MOCK_MY_GIFTS_EMPTY,
+    redeem = MOCK_REDEEM_GIFT_SUCCESS,
+  }: { purchase?: unknown; mine?: unknown; redeem?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/gifts/mine`, (route) => route.fulfill(fulfill(mine)));
+  await page.route(`${API_BASE}/gifts/redeem`, (route) => route.fulfill(fulfill(redeem)));
+  await page.route(`${API_BASE}/gifts`, (route) => route.fulfill(fulfill(purchase)));
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -428,4 +444,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupBatchesApiMocks(page);
   await setupReservationsApiMocks(page);
   await setupOrdersApiMocks(page);
+  await setupGiftsApiMocks(page);
 }

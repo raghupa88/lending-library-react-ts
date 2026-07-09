@@ -37,6 +37,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final DomainEventPublisher events;
+    private final GiftService giftService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -72,6 +73,14 @@ public class AuthService {
                     "referredName", user.getFirstName() + " " + user.getLastName(),
                     "creditAmount", REFERRAL_CREDIT_AMOUNT.toString()
             ));
+        }
+
+        // A valid, unredeemed gift code activates the gifted plan instead of
+        // the usual auto-assigned BASIC; an unknown/already-used code is
+        // silently ignored, same as an unknown referral code above.
+        var redeemedGift = giftService.redeemAtRegistration(user, req.giftCode());
+        if (redeemedGift.isPresent()) {
+            return buildAuthResponse(user, redeemedGift.get().getPlan());
         }
 
         // Auto-assign BASIC subscription on registration
