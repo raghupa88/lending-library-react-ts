@@ -4,6 +4,7 @@ import com.lendinglibrary.api.dto.SubscriptionPlanResponse;
 import com.lendinglibrary.api.dto.SubscriptionRequest;
 import com.lendinglibrary.api.dto.SubscriptionResponse;
 import com.lendinglibrary.domain.entity.Subscription;
+import com.lendinglibrary.domain.entity.User;
 import com.lendinglibrary.domain.enums.BillingCycle;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
@@ -61,28 +62,7 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponse subscribe(SubscriptionRequest req, String email) {
         var user = userService.findByEmail(email);
-
-        // Cancel any existing non-terminal subscription (active or paused) —
-        // switching plans always starts a fresh one.
-        subscriptionRepository.findByUserAndStatusIn(user, NON_TERMINAL)
-                .ifPresent(s -> {
-                    s.setStatus(SubscriptionStatus.CANCELLED);
-                    s.setEndDate(LocalDateTime.now());
-                    subscriptionRepository.save(s);
-                });
-
-        BigDecimal price = switch (req.plan()) {
-            case BASIC -> new BigDecimal("199.00");
-            case PREMIUM -> new BigDecimal("399.00");
-            case ADMIN -> BigDecimal.ZERO;
-        };
-
-        Subscription sub = Subscription.builder()
-                .user(user).plan(req.plan()).monthlyPrice(price).billingCycle(req.billingCycle())
-                .startDate(LocalDateTime.now()).status(SubscriptionStatus.ACTIVE)
-                .maxConcurrentLoans(req.plan().maxConcurrentLoans())
-                .build();
-        sub = subscriptionRepository.save(sub);
+        Subscription sub = replaceActiveSubscription(user, req.plan(), req.billingCycle());
 
         // Referral credit is spent automatically, capped at this bill's total;
         // any leftover balance carries over to the next subscribe.
@@ -103,6 +83,53 @@ public class SubscriptionService {
         ));
 
         return SubscriptionResponse.from(sub, creditApplied);
+    }
+
+    /**
+     * Activates a plan a gift subscription already paid for — same
+     * cancel-existing-and-create logic as {@link #subscribe}, but never
+     * spends the user's own referral credit (the gift already covered it).
+     */
+    @Transactional
+    public SubscriptionResponse activateGiftedPlan(User user, SubscriptionPlan plan, BillingCycle billingCycle) {
+        Subscription sub = replaceActiveSubscription(user, plan, billingCycle);
+
+        events.publish(Topics.SUBSCRIPTION_EVENTS, "subscription.changed", sub.getId().toString(), Map.of(
+                "userId", user.getId().toString(),
+                "userEmail", user.getEmail(),
+                "plan", sub.getPlan().name(),
+                "monthlyPrice", sub.getMonthlyPrice().toString(),
+                "billingCycle", sub.getBillingCycle().name(),
+                "totalBilled", sub.getBillingCycle().totalBilled(sub.getMonthlyPrice()).toString()
+        ));
+
+        return SubscriptionResponse.from(sub);
+    }
+
+    /** Single source of truth for plan sticker prices — also used to price a gift purchase. */
+    public BigDecimal priceFor(SubscriptionPlan plan) {
+        return switch (plan) {
+            case BASIC -> new BigDecimal("199.00");
+            case PREMIUM -> new BigDecimal("399.00");
+            case ADMIN -> BigDecimal.ZERO;
+        };
+    }
+
+    /** Cancels any existing non-terminal subscription (active or paused) and starts a fresh one. */
+    private Subscription replaceActiveSubscription(User user, SubscriptionPlan plan, BillingCycle billingCycle) {
+        subscriptionRepository.findByUserAndStatusIn(user, NON_TERMINAL)
+                .ifPresent(s -> {
+                    s.setStatus(SubscriptionStatus.CANCELLED);
+                    s.setEndDate(LocalDateTime.now());
+                    subscriptionRepository.save(s);
+                });
+
+        Subscription sub = Subscription.builder()
+                .user(user).plan(plan).monthlyPrice(priceFor(plan)).billingCycle(billingCycle)
+                .startDate(LocalDateTime.now()).status(SubscriptionStatus.ACTIVE)
+                .maxConcurrentLoans(plan.maxConcurrentLoans())
+                .build();
+        return subscriptionRepository.save(sub);
     }
 
     /**

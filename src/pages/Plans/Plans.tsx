@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Check } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -74,6 +74,12 @@ export default function Plans() {
         </h1>
         <p className="mx-auto mt-2 max-w-md text-muted">
           Simple pricing. Switch anytime — your borrowed books stay with you.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Buying for someone else?{" "}
+          <Link to="/gift" className="font-medium text-accent hover:text-accent-hover">
+            Send a gift subscription →
+          </Link>
         </p>
       </div>
 

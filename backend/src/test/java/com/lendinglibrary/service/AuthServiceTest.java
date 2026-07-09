@@ -3,7 +3,9 @@ package com.lendinglibrary.service;
 import com.lendinglibrary.api.dto.LoginRequest;
 import com.lendinglibrary.api.dto.RegisterRequest;
 import com.lendinglibrary.application.service.AuthService;
+import com.lendinglibrary.application.service.GiftService;
 import com.lendinglibrary.application.service.RefreshTokenService;
+import com.lendinglibrary.domain.entity.GiftSubscription;
 import com.lendinglibrary.domain.entity.RefreshToken;
 import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.entity.User;
@@ -46,6 +48,7 @@ class AuthServiceTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock RefreshTokenService refreshTokenService;
     @Mock DomainEventPublisher events;
+    @Mock GiftService giftService;
     @InjectMocks AuthService authService;
 
     private User testUser;
@@ -66,7 +69,7 @@ class AuthServiceTest {
 
     @Test
     void register_success() {
-        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, null);
+        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, null, null);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
         when(userRepository.save(any())).thenReturn(testUser);
@@ -89,7 +92,7 @@ class AuthServiceTest {
                 .id(UUID.randomUUID()).email("referrer@example.com")
                 .referralCode("REFCODE1").referralCreditBalance(BigDecimal.ZERO)
                 .firstName("Ref").lastName("Errer").role(Role.MEMBER).active(true).build();
-        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, "refcode1");
+        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, "refcode1", null);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(userRepository.findByReferralCode("REFCODE1")).thenReturn(Optional.of(referrer));
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
@@ -108,7 +111,7 @@ class AuthServiceTest {
 
     @Test
     void register_withUnknownReferralCode_stillSucceeds_noCreditGranted() {
-        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, "BADCODE1");
+        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, "BADCODE1", null);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(userRepository.findByReferralCode("BADCODE1")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("hashed");
@@ -126,8 +129,27 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_withValidGiftCode_activatesGiftedPlanInsteadOfBasic() {
+        var req = new RegisterRequest("new@example.com", "password123", "New", "User", null, null, null, "giftcode1");
+        GiftSubscription gift = GiftSubscription.builder().plan(SubscriptionPlan.PREMIUM).build();
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("hashed");
+        when(userRepository.save(any())).thenReturn(testUser);
+        when(giftService.redeemAtRegistration(any(), eq("giftcode1"))).thenReturn(Optional.of(gift));
+        when(jwtProvider.generateAccessToken(any(), any())).thenReturn("access-token");
+        when(refreshTokenService.issueFamily(any()))
+                .thenReturn(new RefreshTokenService.IssuedToken("refresh-token",
+                        RefreshToken.builder().user(testUser).build()));
+
+        var result = authService.register(req);
+
+        assertThat(result.plan()).isEqualTo("premium");
+        verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
     void register_duplicateEmail_throws() {
-        var req = new RegisterRequest("test@example.com", "password123", "A", "B", null, null, null);
+        var req = new RegisterRequest("test@example.com", "password123", "A", "B", null, null, null, null);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(req))

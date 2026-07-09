@@ -19,6 +19,7 @@ export default function Register() {
 
   const returnTo = params.get("returnTo") || "/dashboard";
   const referralCodeFromLink = params.get("ref") ?? "";
+  const giftCodeFromLink = params.get("gift") ?? "";
 
   const {
     register,
@@ -26,7 +27,7 @@ export default function Register() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { referralCode: referralCodeFromLink },
+    defaultValues: { referralCode: referralCodeFromLink, giftCode: giftCodeFromLink },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
@@ -39,6 +40,7 @@ export default function Register() {
         phone: values.phone ?? "",
         address: values.address ?? "",
         referralCode: values.referralCode ?? "",
+        giftCode: values.giftCode ?? "",
       });
       navigate(returnTo, { replace: true });
     } catch (err) {
@@ -131,6 +133,22 @@ export default function Register() {
                   autoComplete="off"
                   placeholder="e.g. ABC12345"
                   {...register("referralCode")}
+                />
+              )}
+            </Field>
+
+            <Field
+              label="Gift code"
+              optional
+              error={errors.giftCode?.message}
+              hint="Redeeming a gifted subscription? Enter its code here."
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  autoComplete="off"
+                  placeholder="e.g. XYZ98765"
+                  {...register("giftCode")}
                 />
               )}
             </Field>

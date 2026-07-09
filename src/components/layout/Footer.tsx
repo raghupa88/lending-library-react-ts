@@ -29,6 +29,11 @@ export function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/gift" className="text-muted hover:text-foreground">
+                Gift a subscription
+              </Link>
+            </li>
+            <li>
               <Link to="/login" className="text-muted hover:text-foreground">
                 Sign in
               </Link>

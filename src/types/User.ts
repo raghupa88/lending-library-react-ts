@@ -24,4 +24,5 @@ export interface RegisterData {
   phone: string;
   address: string;
   referralCode?: string;
+  giftCode?: string;
 }

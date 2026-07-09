@@ -176,18 +176,25 @@ public class NotificationConsumer {
     }
 
     private void notifyForUserEvent(DomainEvent event) {
-        if (!"referral.credited".equals(event.type())) {
-            return;
-        }
         String userEmail = (String) event.data().get("userEmail");
-        String referredName = (String) event.data().get("referredName");
-        Object creditAmount = event.data().get("creditAmount");
         User user = userRepository.findByEmail(userEmail).orElse(null);
         if (user == null) return;
 
-        saveAndEmail(user, event.type(),
-                "You earned ₹" + creditAmount + " in referral credit",
-                referredName + " joined using your referral code — the credit is applied automatically on your next subscription.");
+        switch (event.type()) {
+            case "referral.credited" -> saveAndEmail(user, event.type(),
+                    "You earned ₹" + event.data().get("creditAmount") + " in referral credit",
+                    event.data().get("referredName")
+                            + " joined using your referral code — the credit is applied automatically on your next subscription.");
+            case "gift.received" -> saveAndEmail(user, event.type(),
+                    "You've been gifted a " + event.data().get("plan") + " subscription!",
+                    event.data().get("purchaserName") + " sent you a gift code: "
+                            + event.data().get("giftCode") + ". Redeem it from the Gift page.");
+            case "gift.redeemed" -> saveAndEmail(user, event.type(),
+                    "Your gift subscription was redeemed",
+                    event.data().get("redeemedByName") + " redeemed the " + event.data().get("plan")
+                            + " subscription you gifted them.");
+            default -> { }
+        }
     }
 
     private void saveAndEmail(User user, String type, String title, String body) {
