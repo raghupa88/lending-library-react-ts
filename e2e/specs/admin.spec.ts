@@ -7,7 +7,7 @@ import {
   setupAdminLearnApiMocks,
   setupAdminTestsApiMocks,
 } from '../helpers/api-mocks';
-import { MOCK_ADMIN_LOANS_OVERDUE } from '../fixtures/mock-data';
+import { MOCK_ADMIN_LOANS_OVERDUE, MOCK_TRENDING_BOOKS } from '../fixtures/mock-data';
 import { expectNoA11yViolations } from '../helpers/axe';
 
 test('unauthenticated /admin redirects to login', async ({ page }) => {
@@ -36,6 +36,27 @@ authTest('admin overview shows stat cards and recent activity', async ({ adminPa
   await authExpect(page.getByText('1Overdue')).toBeVisible();
   await authExpect(page.getByText('2Members')).toBeVisible();
   await authExpect(page.getByText('Recent loan activity')).toBeVisible();
+});
+
+authTest('admin overview shows an empty state for trending books when cassandra is inactive', async ({
+  adminPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupAdminApiMocks(page);
+  await page.goto('/admin');
+  await authExpect(page.getByText('No trend data yet')).toBeVisible();
+});
+
+authTest('admin overview lists trending books when data is available', async ({
+  adminPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupAdminApiMocks(page, { trending: MOCK_TRENDING_BOOKS });
+  await page.goto('/admin');
+  // "The Great Gatsby" also appears in the unrelated "Recent loan activity"
+  // list above, so assert on the borrow-count badges, which are unique.
+  await authExpect(page.getByText('12 borrows')).toBeVisible();
+  await authExpect(page.getByText('7 borrows')).toBeVisible();
 });
 
 authTest('admin nav link appears in the member navbar for admins', async ({

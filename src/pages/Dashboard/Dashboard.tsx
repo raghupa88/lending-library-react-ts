@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap, Award, MapPin } from "lucide-react";
+import { BookOpen, CalendarClock, Library, Settings, History, GraduationCap, Award, MapPin, Activity } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   useMyLoansQuery,
@@ -25,6 +25,7 @@ import {
   useClaimReservation,
 } from "../../features/reservations/queries";
 import { useMyOrdersQuery, usePayOrder } from "../../features/orders/queries";
+import { useMyActivityQuery } from "../../features/activity/queries";
 import { BookCover } from "../../features/books/BookCover";
 import { StatCard } from "../../components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -55,6 +56,16 @@ function formatDate(iso: string): string {
   });
 }
 
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(diffMs / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -66,6 +77,7 @@ export default function Dashboard() {
   const { data: bookings } = useMyBookingsQuery(Boolean(user));
   const { data: reservations } = useMyReservationsQuery(Boolean(user));
   const { data: orders } = useMyOrdersQuery(Boolean(user));
+  const { data: activity, isLoading: activityLoading } = useMyActivityQuery(Boolean(user));
   const returnBook = useReturnBook();
   const renewLoan = useRenewLoan();
   const cancelBooking = useCancelBooking();
@@ -237,6 +249,7 @@ export default function Dashboard() {
               { id: "reading", label: `Currently reading (${activeLoans.length})` },
               { id: "history", label: `History (${pastLoans.length})` },
               { id: "learning", label: `My learning (${enrollments?.length ?? 0})` },
+              { id: "activity", label: "Activity" },
             ]}
             className="w-fit"
           />
@@ -511,6 +524,33 @@ export default function Dashboard() {
                   ))}
                 </ul>
               </div>
+            )}
+          </TabPanel>
+
+          <TabPanel id="activity" active={tab === "activity"} className="mt-5">
+            {activityLoading ? (
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : !activity || activity.length === 0 ? (
+              <EmptyState
+                icon={<Activity aria-hidden="true" />}
+                title="No activity yet"
+                description="Borrow a book, enroll in a course, or subscribe to a plan — your recent activity will show up here."
+              />
+            ) : (
+              <ul className="space-y-2">
+                {activity.map((entry) => (
+                  <li key={entry.eventId}>
+                    <Card className="flex items-center justify-between gap-3 p-3">
+                      <span className="text-sm">{entry.summary}</span>
+                      <span className="shrink-0 text-xs text-muted">{formatRelative(entry.occurredAt)}</span>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
             )}
           </TabPanel>
         </section>

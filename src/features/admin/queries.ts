@@ -27,6 +27,14 @@ export interface AdminLoan {
   status: "ACTIVE" | "RETURNED" | "OVERDUE";
 }
 
+/** Matches backend TrendingBookResponse. Empty unless the backend's cassandra profile is active. */
+export interface TrendingBook {
+  bookId: string;
+  title: string;
+  author: string;
+  borrowCount: number;
+}
+
 /** Matches backend BookRequest (note: coverUrl here, cover in responses). */
 export interface BookInput {
   title: string;
@@ -55,6 +63,13 @@ export function useAdminLoansQuery(status?: string) {
     queryKey: ["admin", "loans", status ?? "all"],
     queryFn: () =>
       api.get<AdminLoan[]>(`/admin/loans${status ? `?status=${status}` : ""}`),
+  });
+}
+
+export function useTrendingBooksQuery() {
+  return useQuery({
+    queryKey: ["admin", "books", "trending"],
+    queryFn: () => api.get<TrendingBook[]>("/admin/books/trending"),
   });
 }
 

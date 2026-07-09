@@ -3,6 +3,16 @@ spring:
     name: lending-library-api
   profiles:
     active: dev
+  # Unlike the Kafka/mail clients below, building a Cassandra CqlSession
+  # bean connects synchronously and fails startup if nothing answers on
+  # the contact point — so (unlike Kafka) it isn't safe to just leave the
+  # starter's auto-configuration enabled and rely on laziness. Excluded by
+  # default; the cassandra profile below cancels this exclusion.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration
   jpa:
     # Flyway owns the schema; Hibernate only validates entities against it.
     hibernate:
@@ -127,3 +137,27 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+---
+# Cassandra profile: activates ActivityConsumer (@Profile("kafka & cassandra"),
+# so it also needs the kafka profile above) and the real Cassandra-backed
+# query services (@Profile("cassandra")) that back /activity/me and
+# /admin/books/trending. schema-action is deliberately "none" — the
+# keyspace/tables are created by the one-shot cassandra-init compose
+# service running cql/schema.cql, the same "migrations own the schema, the
+# app doesn't auto-DDL it" stance as Flyway/Postgres (ADR-007). Without
+# this profile, spring-boot-starter-data-cassandra sits unused on the
+# classpath and no connection is attempted (lazy on first read/write, same
+# as the Kafka/mail clients above).
+spring:
+  config:
+    activate:
+      on-profile: cassandra
+  autoconfigure:
+    exclude: []
+  cassandra:
+    keyspace-name: lending_library
+    contact-points: ${CASSANDRA_CONTACT_POINTS:localhost}
+    port: ${CASSANDRA_PORT:9042}
+    local-datacenter: ${CASSANDRA_DATACENTER:datacenter1}
+    schema-action: none

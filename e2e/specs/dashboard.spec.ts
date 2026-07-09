@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { test as authTest, expect as authExpect } from '../fixtures/auth.fixture';
-import { setupAllApiMocks, setupBooksApiMock, setupLoansApiMock } from '../helpers/api-mocks';
-import { MOCK_LOANS_EMPTY } from '../fixtures/mock-data';
+import {
+  setupAllApiMocks,
+  setupBooksApiMock,
+  setupLoansApiMock,
+  setupActivityApiMocks,
+} from '../helpers/api-mocks';
+import { MOCK_LOANS_EMPTY, MOCK_ACTIVITY } from '../fixtures/mock-data';
 import { expectNoA11yViolations } from '../helpers/axe';
 
 test('unauthenticated access to /dashboard redirects to /login', async ({ page }) => {
@@ -87,4 +92,25 @@ authTest('dashboard has no WCAG A/AA violations', async ({ authenticatedPage: pa
   await page.goto('/dashboard');
   await authExpect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expectNoA11yViolations(page);
+});
+
+authTest('activity tab shows an empty state when the cassandra profile is inactive', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Activity' }).click();
+  await authExpect(page.getByText('No activity yet')).toBeVisible();
+});
+
+authTest('activity tab lists recent activity, newest first', async ({
+  authenticatedPage: page,
+}) => {
+  await setupAllApiMocks(page);
+  await setupActivityApiMocks(page, MOCK_ACTIVITY);
+  await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Activity' }).click();
+  const panel = page.getByRole('tabpanel');
+  await authExpect(panel.getByText('Borrowed "The Great Gatsby"')).toBeVisible();
+  await authExpect(panel.getByText('Subscribed to the PREMIUM plan')).toBeVisible();
 });

@@ -16,3 +16,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  # See src/main/resources/application.yml for why this is needed: unlike
+  # Kafka, a Cassandra CqlSession bean connects synchronously at startup
+  # and fails hard if nothing answers — excluded here too since this file
+  # replaces (not merges with) the main one.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration
