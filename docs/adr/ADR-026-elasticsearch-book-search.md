@@ -116,6 +116,18 @@ Kibana to view them in.
   is unaffected and still correct: this project's real deployment
   (docker-compose) always activates both profiles together, unlike these
   two ITs which each isolate one technology.
+- **A second, genuine query bug** surfaced once the profile fix let
+  `ElasticsearchSearchIT` actually reach a real cluster:
+  `ElasticsearchBookSearchQueryService.search` built its `Criteria` by
+  starting from an empty `new Criteria()` (no field) and `.and()`-ing real
+  criteria onto it — which produced a query matching zero documents
+  rather than the expected results. This is exactly the kind of bug a
+  mocked unit test can't catch (the mock returns whatever `SearchHits` the
+  test tells it to, regardless of what `Criteria` was actually built) —
+  only a real cluster exercising the real query surfaced it. Fixed by only
+  ever combining real, field-named criteria (`null` until the first one is
+  set, `.and()`-ed from there), falling back to a bare `new Criteria()`
+  only when there are no filters at all.
 - No Docker daemon in this environment (same caveat ADR-008/ADR-025
   noted) — `ElasticsearchSearchIT` cannot be run interactively here; it
   runs in CI, where the Cassandra branch's real Testcontainers Cassandra

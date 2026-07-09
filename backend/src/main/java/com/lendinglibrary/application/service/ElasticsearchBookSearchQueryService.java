@@ -32,21 +32,27 @@ public class ElasticsearchBookSearchQueryService implements BookSearchQueryServi
     @Override
     public PagedResponse<BookResponse> search(
             String search, String category, String language, Boolean available, int page, int size) {
-        Criteria criteria = new Criteria();
+        // Built up from real, field-named criteria only — starting from an
+        // empty new Criteria() and .and()-ing onto it produces a query that
+        // matches nothing (found via a real CI failure against a real
+        // cluster, not something a mocked unit test could have caught).
+        Criteria criteria = null;
         if (search != null && !search.isBlank()) {
-            criteria = criteria.and(new Criteria("title").contains(search)
-                    .or(new Criteria("author").contains(search)));
+            criteria = new Criteria("title").contains(search).or(new Criteria("author").contains(search));
         }
         if (category != null) {
-            criteria = criteria.and(new Criteria("category").is(category));
+            criteria = and(criteria, new Criteria("category").is(category));
         }
         if (language != null) {
-            criteria = criteria.and(new Criteria("language").is(language));
+            criteria = and(criteria, new Criteria("language").is(language));
         }
         if (available != null) {
-            criteria = available
-                    ? criteria.and(new Criteria("availableCopies").greaterThan(0))
-                    : criteria.and(new Criteria("availableCopies").is(0));
+            criteria = and(criteria, available
+                    ? new Criteria("availableCopies").greaterThan(0)
+                    : new Criteria("availableCopies").is(0));
+        }
+        if (criteria == null) {
+            criteria = new Criteria(); // no filters at all — match everything
         }
 
         var pageable = PageRequest.of(page, size);
@@ -73,5 +79,9 @@ public class ElasticsearchBookSearchQueryService implements BookSearchQueryServi
                 .toList();
 
         return PagedResponse.from(new PageImpl<>(content, pageable, hits.getTotalHits()));
+    }
+
+    private static Criteria and(Criteria existing, Criteria next) {
+        return existing == null ? next : existing.and(next);
     }
 }
