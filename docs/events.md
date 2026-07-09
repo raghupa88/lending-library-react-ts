@@ -36,8 +36,10 @@ idempotent (see `ProcessedEvent` / `NotificationConsumer`).
 |---|---|---|
 | `book.updated` | `BookService.create` / `.update` | `action` (`created`/`updated`), `title`, `author` |
 
-No consumer exists yet — this topic is seeded now so the Elasticsearch
-search-index phase can subscribe without touching the producers.
+`BookSearchConsumer` (elasticsearch profile) subscribes to this — it
+re-fetches the full row by `aggregateId` rather than needing every
+searchable field carried in the payload, so this event didn't need to
+grow when that consumer was added.
 
 ## `library.payment.events` (reserved)
 
@@ -49,6 +51,8 @@ No producer yet — reserved for the payments phase (`payment.completed`,
 | Consumer | Topics | Group | Behavior |
 |---|---|---|---|
 | `NotificationConsumer` | loan, subscription events | `notifications` | Writes an in-app `notifications` row + best-effort email (Mailpit in dev). Idempotent via `ProcessedEvent` (checked before acting, recorded after). |
+| `ActivityConsumer` (cassandra profile) | loan, subscription, course, book, user, payment events | `activity-feed` | Writes a Cassandra `activity_by_user` row per event and increments `book_borrow_counts` on `loan.created`. See ADR-025. |
+| `BookSearchConsumer` (elasticsearch profile) | book, loan events | `book-search` | Re-indexes the `books` Elasticsearch document by re-fetching the current row from Postgres on `book.updated` and on `loan.created`/`loan.returned` (which change `availableCopies`). Naturally idempotent — no processed-events table needed. See ADR-026. |
 
 ## Adding a new event
 

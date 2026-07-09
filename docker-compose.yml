@@ -109,10 +109,61 @@ services:
     entrypoint: ["cqlsh", "cassandra", "-f", "/cql/schema.cql"]
     restart: "no"
 
+  # Book-search index (see ADR-026). Security disabled — this is a local
+  # demo/dev stack, not a production cluster; a real deployment would
+  # enable it and give Filebeat/Kibana real credentials.
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  # Inspect the books index / logs shipped by Filebeat at http://localhost:5601
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # Ships the backend's ECS-JSON stdout logs (logback-spring.xml's `docker`
+  # profile) to Elasticsearch, viewable in Kibana's Discover/Logs views —
+  # the last piece of ADR-008's "logs as stdout event streams" 12-factor
+  # item. Docker-log autodiscovery like this assumes a Linux Docker host
+  # where /var/lib/docker/containers is directly readable; Docker Desktop
+  # (Mac/Windows) runs Docker inside its own VM, so that path isn't visible
+  # to a container the same way — a real caveat of this approach, not
+  # something this compose file works around.
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.15.0
+    user: root
+    volumes:
+      - ./observability/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    command: ["--strict.perms=false"]
+
   backend:
     build: ./backend
     environment:
-      SPRING_PROFILES_ACTIVE: postgres,docker,kafka,cassandra
+      SPRING_PROFILES_ACTIVE: postgres,docker,kafka,cassandra,elasticsearch
       DB_URL: jdbc:postgresql://postgres:5432/lendinglibrary
       DB_USER: ${DB_USER:-lending}
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
@@ -120,6 +171,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       CASSANDRA_CONTACT_POINTS: cassandra
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
     ports:
@@ -131,6 +183,8 @@ services:
         condition: service_healthy
       cassandra-init:
         condition: service_completed_successfully
+      elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health/readiness | grep -q UP"]
       interval: 10s
@@ -156,3 +210,4 @@ services:
 volumes:
   pgdata:
   cassandradata:
+  esdata:

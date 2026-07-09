@@ -9,7 +9,6 @@ import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.BookRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +20,12 @@ import java.util.UUID;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final BookSearchQueryService bookSearchQueryService;
     private final DomainEventPublisher events;
 
     public PagedResponse<BookResponse> list(String search, String category, String language,
                                             Boolean available, int page, int size) {
-        var pageable = PageRequest.of(page, size);
-        var result = bookRepository.findWithFilters(search, category, language, available, pageable);
-        return PagedResponse.from(result.map(BookResponse::from));
+        return bookSearchQueryService.search(search, category, language, available, page, size);
     }
 
     public BookResponse getById(UUID id) {
@@ -74,8 +72,9 @@ public class BookService {
     }
 
     private void publishBookUpdated(Book book, String action) {
-        // Feeds the future search-index consumer (Elasticsearch phase); no
-        // subscriber exists yet, which is fine — the outbox just accumulates.
+        // Feeds BookSearchConsumer (elasticsearch profile) — it re-fetches
+        // the full row by aggregateId rather than needing every searchable
+        // field carried in this payload, so this event didn't need to grow.
         events.publish(Topics.BOOK_EVENTS, "book.updated", book.getId().toString(), Map.of(
                 "action", action,
                 "title", book.getTitle(),
