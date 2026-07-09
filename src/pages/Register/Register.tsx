@@ -18,12 +18,16 @@ export default function Register() {
   const [serverError, setServerError] = useState("");
 
   const returnTo = params.get("returnTo") || "/dashboard";
+  const referralCodeFromLink = params.get("ref") ?? "";
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) });
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { referralCode: referralCodeFromLink },
+  });
 
   const onSubmit = async (values: RegisterFormValues) => {
     setServerError("");
@@ -34,6 +38,7 @@ export default function Register() {
         password: values.password,
         phone: values.phone ?? "",
         address: values.address ?? "",
+        referralCode: values.referralCode ?? "",
       });
       navigate(returnTo, { replace: true });
     } catch (err) {
@@ -110,6 +115,22 @@ export default function Register() {
                   autoComplete="street-address"
                   placeholder="House, street, city, PIN"
                   {...register("address")}
+                />
+              )}
+            </Field>
+
+            <Field
+              label="Referral code"
+              optional
+              error={errors.referralCode?.message}
+              hint="Have a friend's code? They'll get ₹100 in library credit."
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  autoComplete="off"
+                  placeholder="e.g. ABC12345"
+                  {...register("referralCode")}
                 />
               )}
             </Field>

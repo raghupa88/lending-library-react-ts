@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -41,6 +42,17 @@ public class User {
 
     private String phone;
     private String address;
+
+    @Column(name = "referral_code", unique = true)
+    private String referralCode;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "referred_by_id")
+    private User referredBy;
+
+    @Column(name = "referral_credit_balance", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal referralCreditBalance = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

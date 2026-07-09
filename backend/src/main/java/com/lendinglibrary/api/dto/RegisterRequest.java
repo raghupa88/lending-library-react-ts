@@ -10,5 +10,7 @@ public record RegisterRequest(
         @NotBlank String firstName,
         @NotBlank String lastName,
         String phone,
-        String address
+        String address,
+        /** An unknown or malformed code is ignored rather than rejected — a typo shouldn't block signup. */
+        String referralCode
 ) {}

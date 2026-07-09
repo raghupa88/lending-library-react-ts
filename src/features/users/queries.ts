@@ -9,6 +9,8 @@ export interface UserProfile {
   role: string;
   phone: string | null;
   address: string | null;
+  referralCode: string | null;
+  referralCreditBalance: number;
 }
 
 export interface UpdateProfileInput {

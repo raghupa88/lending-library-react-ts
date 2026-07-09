@@ -16,9 +16,16 @@ public record SubscriptionResponse(
         int maxConcurrentLoans,
         LocalDateTime pausedUntil,
         String billingCycle,
-        BigDecimal totalBilled
+        BigDecimal totalBilled,
+        BigDecimal creditApplied
 ) {
     public static SubscriptionResponse from(Subscription s) {
+        return from(s, BigDecimal.ZERO);
+    }
+
+    /** creditApplied is only non-zero on the specific subscribe() response that spent referral credit. */
+    public static SubscriptionResponse from(Subscription s, BigDecimal creditApplied) {
+        BigDecimal fullTotal = s.getBillingCycle().totalBilled(s.getMonthlyPrice());
         return new SubscriptionResponse(
                 s.getId(),
                 s.getPlan().name().toLowerCase(),
@@ -29,7 +36,8 @@ public record SubscriptionResponse(
                 s.getMaxConcurrentLoans(),
                 s.getPausedUntil(),
                 s.getBillingCycle().name().toLowerCase(),
-                s.getBillingCycle().totalBilled(s.getMonthlyPrice())
+                fullTotal.subtract(creditApplied),
+                creditApplied
         );
     }
 }

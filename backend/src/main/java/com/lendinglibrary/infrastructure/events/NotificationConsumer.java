@@ -54,6 +54,11 @@ public class NotificationConsumer {
         handle(payload, this::notifyForBookEvent);
     }
 
+    @KafkaListener(topics = Topics.USER_EVENTS, groupId = "notifications")
+    public void onUserEvent(String payload) {
+        handle(payload, this::notifyForUserEvent);
+    }
+
     private void handle(String payload, java.util.function.Consumer<DomainEvent> action) {
         DomainEvent event;
         try {
@@ -168,6 +173,21 @@ public class NotificationConsumer {
                 "\"" + bookTitle + "\" is ready for pickup",
                 "Your reserved copy is being held until " + event.data().get("holdExpiresAt")
                         + " — claim it from your dashboard before then.");
+    }
+
+    private void notifyForUserEvent(DomainEvent event) {
+        if (!"referral.credited".equals(event.type())) {
+            return;
+        }
+        String userEmail = (String) event.data().get("userEmail");
+        String referredName = (String) event.data().get("referredName");
+        Object creditAmount = event.data().get("creditAmount");
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) return;
+
+        saveAndEmail(user, event.type(),
+                "You earned ₹" + creditAmount + " in referral credit",
+                referredName + " joined using your referral code — the credit is applied automatically on your next subscription.");
     }
 
     private void saveAndEmail(User user, String type, String title, String body) {

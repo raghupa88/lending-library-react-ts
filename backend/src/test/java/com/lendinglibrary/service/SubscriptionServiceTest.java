@@ -14,6 +14,7 @@ import com.lendinglibrary.domain.exception.ResourceNotFoundException;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
+import com.lendinglibrary.infrastructure.persistence.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 class SubscriptionServiceTest {
 
     @Mock SubscriptionRepository subscriptionRepository;
+    @Mock UserRepository userRepository;
     @Mock UserService userService;
     @Mock DomainEventPublisher events;
     @InjectMocks SubscriptionService subscriptionService;
@@ -131,6 +133,66 @@ class SubscriptionServiceTest {
 
         assertThat(result.billingCycle()).isEqualTo("monthly");
         assertThat(result.totalBilled()).isEqualByComparingTo("199.00");
+    }
+
+    @Test
+    void subscribe_partialReferralCredit_reducesTotalBilledAndCarriesRemainderToZero() {
+        user.setReferralCreditBalance(new BigDecimal("50.00"));
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(subscriptionRepository.findByUserAndStatusIn(user,
+                List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED))).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(any())).thenAnswer(inv -> {
+            Subscription s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        var req = new SubscriptionRequest(SubscriptionPlan.BASIC, BillingCycle.MONTHLY);
+        var result = subscriptionService.subscribe(req, "member@example.com");
+
+        assertThat(result.creditApplied()).isEqualByComparingTo("50.00");
+        assertThat(result.totalBilled()).isEqualByComparingTo("149.00");
+        assertThat(user.getReferralCreditBalance()).isEqualByComparingTo("0.00");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void subscribe_creditFullyCoversBill_totalBilledZeroAndRemainderCarriesOver() {
+        user.setReferralCreditBalance(new BigDecimal("500.00"));
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(subscriptionRepository.findByUserAndStatusIn(user,
+                List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED))).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(any())).thenAnswer(inv -> {
+            Subscription s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        var req = new SubscriptionRequest(SubscriptionPlan.BASIC, BillingCycle.MONTHLY);
+        var result = subscriptionService.subscribe(req, "member@example.com");
+
+        assertThat(result.creditApplied()).isEqualByComparingTo("199.00");
+        assertThat(result.totalBilled()).isEqualByComparingTo("0.00");
+        assertThat(user.getReferralCreditBalance()).isEqualByComparingTo("301.00");
+    }
+
+    @Test
+    void subscribe_noCreditBalance_totalBilledUnchangedAndNoUserSave() {
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(subscriptionRepository.findByUserAndStatusIn(user,
+                List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED))).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(any())).thenAnswer(inv -> {
+            Subscription s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        var req = new SubscriptionRequest(SubscriptionPlan.BASIC, BillingCycle.MONTHLY);
+        var result = subscriptionService.subscribe(req, "member@example.com");
+
+        assertThat(result.creditApplied()).isEqualByComparingTo("0.00");
+        assertThat(result.totalBilled()).isEqualByComparingTo("199.00");
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
