@@ -162,11 +162,13 @@ spring:
     activate:
       on-profile: cassandra
   # Clears the *entire* exclude list (not just Cassandra's 3 classes) —
-  # harmless in this project since docker-compose always activates
-  # cassandra and elasticsearch together, and clearing to the same empty
-  # list from either profile's document has the same net effect. A
-  # deployment that activated only one of the two would need a more
-  # surgical per-profile list instead of this shared shortcut.
+  # correct here because docker-compose always activates cassandra and
+  # elasticsearch together in this project's real deployment, so clearing
+  # to the same empty list from either profile's document has the same net
+  # effect. Tests that activate only one of the two (CassandraSchemaIT,
+  # ElasticsearchSearchIT) can't use this shortcut — confirmed by a real CI
+  # failure — and instead override with an explicit, surgical list that
+  # re-enables just the one technology under test (see ADR-026).
   autoconfigure:
     exclude: []
   cassandra:
@@ -188,6 +190,9 @@ spring:
   config:
     activate:
       on-profile: elasticsearch
+  # Clears the entire exclude list — see the cassandra profile above for
+  # why that's correct here but not in a test that isolates just one of
+  # the two technologies.
   autoconfigure:
     exclude: []
   elasticsearch:

@@ -35,10 +35,20 @@ import static org.awaitility.Awaitility.await;
  * the {@code @Profile("elasticsearch")}-gated beans themselves (profile
  * activation isn't blocked by the same shadowing), and
  * {@code @ServiceConnection} supplies the cluster URI directly.
+ *
+ * <p>The exclude override below re-enables only Elasticsearch's own
+ * auto-configuration classes, not the whole shared list — clearing it
+ * entirely would also re-enable Cassandra's, and unlike Elasticsearch's
+ * lazy REST client, Cassandra's CqlSession bean connects synchronously
+ * and fails hard with no real cluster in this test's context (found via a
+ * real CI failure, not guessed).
  */
 @SpringBootTest
 @ActiveProfiles("elasticsearch")
-@TestPropertySource(properties = "spring.autoconfigure.exclude=")
+@TestPropertySource(properties = "spring.autoconfigure.exclude="
+        + "org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,"
+        + "org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration,"
+        + "org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration")
 @Testcontainers
 class ElasticsearchSearchIT {
 

@@ -100,6 +100,22 @@ Kibana to view them in.
   `npm test`, `npm run build`, and the full e2e suite all still pass
   unchanged, confirming the backend swap really is transparent to the
   Catalog page and its specs.
+- **Errors found and fixed via a real CI failure**: `ElasticsearchSearchIT`
+  initially cleared `spring.autoconfigure.exclude` entirely via
+  `@TestPropertySource`, which re-enabled Cassandra's auto-configuration
+  too (the property is one shared list) — and Cassandra's `CqlSession`
+  bean, unlike Elasticsearch's lazy REST client, connects synchronously
+  and fails hard with no real cluster in that test's context. Fixed by
+  overriding the exclude list with an explicit, surgical value that
+  re-enables only Elasticsearch's own auto-configuration classes. Applied
+  the same fix defensively to `CassandraSchemaIT` (which had the same
+  latent issue in reverse but happened to pass, since Elasticsearch's
+  client doesn't connect eagerly *today* — relying on that instead of
+  being explicit would be fragile). The main `application.yml`'s shared
+  `exclude: []` shortcut in the `cassandra`/`elasticsearch` profile blocks
+  is unaffected and still correct: this project's real deployment
+  (docker-compose) always activates both profiles together, unlike these
+  two ITs which each isolate one technology.
 - No Docker daemon in this environment (same caveat ADR-008/ADR-025
   noted) — `ElasticsearchSearchIT` cannot be run interactively here; it
   runs in CI, where the Cassandra branch's real Testcontainers Cassandra
