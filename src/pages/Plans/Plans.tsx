@@ -8,6 +8,7 @@ import {
   useSubscribe,
   formatMaxBooks,
   type Plan,
+  type BillingCycle,
 } from "../../features/subscriptions/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -15,6 +16,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { Skeleton } from "../../components/ui/skeleton";
 import { EmptyState } from "../../components/ui/empty-state";
+import { Tabs } from "../../components/ui/tabs";
 import { useToast } from "../../components/ui/toast";
 import { ApiError } from "../../lib/api";
 import { cn } from "../../lib/cn";
@@ -25,12 +27,14 @@ export default function Plans() {
   const navigate = useNavigate();
   const location = useLocation();
   const [confirming, setConfirming] = useState<Plan | null>(null);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
   const { data: plans, isLoading, isError } = usePlansQuery();
   const { data: subscription } = useCurrentSubscriptionQuery(Boolean(user));
   const subscribe = useSubscribe();
 
   const currentPlanId = subscription?.plan?.toLowerCase();
+  const isAnnual = billingCycle === "annual";
 
   const choosePlan = (plan: Plan) => {
     if (!user) {
@@ -42,16 +46,19 @@ export default function Plans() {
 
   const confirmSubscribe = () => {
     if (!confirming) return;
-    subscribe.mutate(confirming.id, {
-      onSuccess: (sub) => {
-        setConfirming(null);
-        toast("success", `You're on the ${sub.plan} plan — happy reading!`);
+    subscribe.mutate(
+      { planId: confirming.id, billingCycle },
+      {
+        onSuccess: (sub) => {
+          setConfirming(null);
+          toast("success", `You're on the ${sub.plan} plan — happy reading!`);
+        },
+        onError: (err) => {
+          setConfirming(null);
+          toast("error", err instanceof ApiError ? err.message : "Couldn't change the plan");
+        },
       },
-      onError: (err) => {
-        setConfirming(null);
-        toast("error", err instanceof ApiError ? err.message : "Couldn't change the plan");
-      },
-    });
+    );
   };
 
   return (
@@ -61,8 +68,23 @@ export default function Plans() {
           Plans for every kind of reader
         </h1>
         <p className="mx-auto mt-2 max-w-md text-muted">
-          Simple monthly pricing. Switch anytime — your borrowed books stay with you.
+          Simple pricing. Switch anytime — your borrowed books stay with you.
         </p>
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <Tabs
+          label="Billing cycle"
+          value={billingCycle}
+          onChange={(id) => setBillingCycle(id as BillingCycle)}
+          items={[
+            { id: "monthly", label: "Monthly" },
+            { id: "annual", label: "Annual" },
+          ]}
+        />
+        {isAnnual && (
+          <p className="text-sm font-medium text-success">Pay for 10 months, get 12 — 2 months free</p>
+        )}
       </div>
 
       {isLoading ? (
@@ -104,10 +126,19 @@ export default function Plans() {
                 )}
                 <CardHeader>
                   <CardTitle className="font-display">{plan.name}</CardTitle>
-                  <div>
-                    <span className="font-display text-3xl font-semibold">₹{plan.price}</span>
-                    <span className="text-sm text-muted">/month</span>
-                  </div>
+                  {isAnnual ? (
+                    <div>
+                      <span className="font-display text-3xl font-semibold">
+                        ₹{(plan.annualPrice / 12).toFixed(0)}
+                      </span>
+                      <span className="text-sm text-muted">/month, billed ₹{plan.annualPrice}/year</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="font-display text-3xl font-semibold">₹{plan.price}</span>
+                      <span className="text-sm text-muted">/month</span>
+                    </div>
+                  )}
                   <p className="text-sm text-muted">{formatMaxBooks(plan.maxBooks)}</p>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col">
@@ -143,8 +174,10 @@ export default function Plans() {
         title={`Switch to ${confirming?.name ?? ""}?`}
       >
         <p className="text-sm text-muted">
-          You'll be billed ₹{confirming?.price}/month —{" "}
-          {confirming ? formatMaxBooks(confirming.maxBooks).toLowerCase() : ""}. You can switch
+          {isAnnual
+            ? `You'll be billed ₹${confirming?.annualPrice}/year (2 months free)`
+            : `You'll be billed ₹${confirming?.price}/month`}{" "}
+          — {confirming ? formatMaxBooks(confirming.maxBooks).toLowerCase() : ""}. You can switch
           again anytime.
         </p>
         <div className="mt-5 flex justify-end gap-2">

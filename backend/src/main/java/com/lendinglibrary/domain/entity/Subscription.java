@@ -1,5 +1,6 @@
 package com.lendinglibrary.domain.entity;
 
+import com.lendinglibrary.domain.enums.BillingCycle;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import jakarta.persistence.*;
@@ -29,6 +30,11 @@ public class Subscription {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monthlyPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_cycle", nullable = false, length = 20)
+    @Builder.Default
+    private BillingCycle billingCycle = BillingCycle.MONTHLY;
 
     @Column(nullable = false)
     private LocalDateTime startDate;

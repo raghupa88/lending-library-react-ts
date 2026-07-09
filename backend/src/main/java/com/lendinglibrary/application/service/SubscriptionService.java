@@ -4,6 +4,7 @@ import com.lendinglibrary.api.dto.SubscriptionPlanResponse;
 import com.lendinglibrary.api.dto.SubscriptionRequest;
 import com.lendinglibrary.api.dto.SubscriptionResponse;
 import com.lendinglibrary.domain.entity.Subscription;
+import com.lendinglibrary.domain.enums.BillingCycle;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
@@ -34,11 +35,14 @@ public class SubscriptionService {
     private final DomainEventPublisher events;
 
     public List<SubscriptionPlanResponse> getPlans() {
+        BigDecimal basicPrice = new BigDecimal("199.00");
+        BigDecimal premiumPrice = new BigDecimal("399.00");
         return List.of(
-            new SubscriptionPlanResponse("basic", "Basic", new BigDecimal("199.00"), 3,
+            new SubscriptionPlanResponse("basic", "Basic", basicPrice,
+                BillingCycle.ANNUAL.totalBilled(basicPrice), 3,
                 List.of("Up to 3 books at a time", "Home delivery", "15-day loan period"), false),
-            new SubscriptionPlanResponse("premium", "Premium", new BigDecimal("399.00"),
-                Integer.MAX_VALUE,
+            new SubscriptionPlanResponse("premium", "Premium", premiumPrice,
+                BillingCycle.ANNUAL.totalBilled(premiumPrice), Integer.MAX_VALUE,
                 List.of("Unlimited books", "Priority home delivery", "30-day loan period",
                         "Early access to new titles"), true)
         );
@@ -72,7 +76,7 @@ public class SubscriptionService {
         };
 
         Subscription sub = Subscription.builder()
-                .user(user).plan(req.plan()).monthlyPrice(price)
+                .user(user).plan(req.plan()).monthlyPrice(price).billingCycle(req.billingCycle())
                 .startDate(LocalDateTime.now()).status(SubscriptionStatus.ACTIVE)
                 .maxConcurrentLoans(req.plan().maxConcurrentLoans())
                 .build();
@@ -82,7 +86,9 @@ public class SubscriptionService {
                 "userId", user.getId().toString(),
                 "userEmail", user.getEmail(),
                 "plan", sub.getPlan().name(),
-                "monthlyPrice", sub.getMonthlyPrice().toString()
+                "monthlyPrice", sub.getMonthlyPrice().toString(),
+                "billingCycle", sub.getBillingCycle().name(),
+                "totalBilled", sub.getBillingCycle().totalBilled(sub.getMonthlyPrice()).toString()
         ));
 
         return SubscriptionResponse.from(sub);

@@ -14,7 +14,9 @@ public record SubscriptionResponse(
         LocalDateTime endDate,
         String status,
         int maxConcurrentLoans,
-        LocalDateTime pausedUntil
+        LocalDateTime pausedUntil,
+        String billingCycle,
+        BigDecimal totalBilled
 ) {
     public static SubscriptionResponse from(Subscription s) {
         return new SubscriptionResponse(
@@ -25,7 +27,9 @@ public record SubscriptionResponse(
                 s.getEndDate(),
                 s.getStatus().name().toLowerCase(),
                 s.getMaxConcurrentLoans(),
-                s.getPausedUntil()
+                s.getPausedUntil(),
+                s.getBillingCycle().name().toLowerCase(),
+                s.getBillingCycle().totalBilled(s.getMonthlyPrice())
         );
     }
 }

@@ -7,6 +7,7 @@ public record SubscriptionPlanResponse(
         String id,
         String name,
         BigDecimal price,
+        BigDecimal annualPrice,
         int maxBooks,
         List<String> features,
         boolean popular

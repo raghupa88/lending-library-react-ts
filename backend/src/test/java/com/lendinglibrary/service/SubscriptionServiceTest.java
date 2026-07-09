@@ -5,6 +5,7 @@ import com.lendinglibrary.application.service.SubscriptionService;
 import com.lendinglibrary.application.service.UserService;
 import com.lendinglibrary.domain.entity.Subscription;
 import com.lendinglibrary.domain.entity.User;
+import com.lendinglibrary.domain.enums.BillingCycle;
 import com.lendinglibrary.domain.enums.Role;
 import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
@@ -88,12 +89,48 @@ class SubscriptionServiceTest {
             return s;
         });
 
-        var req = new SubscriptionRequest(SubscriptionPlan.PREMIUM);
+        var req = new SubscriptionRequest(SubscriptionPlan.PREMIUM, BillingCycle.MONTHLY);
         var result = subscriptionService.subscribe(req, "member@example.com");
 
         assertThat(active.getStatus()).isEqualTo(SubscriptionStatus.CANCELLED);
         assertThat(result.plan()).isEqualTo("premium");
         verify(events).publish(eq(Topics.SUBSCRIPTION_EVENTS), eq("subscription.changed"), any(), any(Map.class));
+    }
+
+    @Test
+    void subscribe_annualBillingCycle_billsTenTimesMonthlyRate() {
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(subscriptionRepository.findByUserAndStatusIn(user,
+                List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED))).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(any())).thenAnswer(inv -> {
+            Subscription s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        var req = new SubscriptionRequest(SubscriptionPlan.PREMIUM, BillingCycle.ANNUAL);
+        var result = subscriptionService.subscribe(req, "member@example.com");
+
+        assertThat(result.billingCycle()).isEqualTo("annual");
+        assertThat(result.totalBilled()).isEqualByComparingTo("3990.00");
+    }
+
+    @Test
+    void subscribe_omittedBillingCycle_defaultsToMonthly() {
+        when(userService.findByEmail("member@example.com")).thenReturn(user);
+        when(subscriptionRepository.findByUserAndStatusIn(user,
+                List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED))).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(any())).thenAnswer(inv -> {
+            Subscription s = inv.getArgument(0);
+            if (s.getId() == null) s.setId(UUID.randomUUID());
+            return s;
+        });
+
+        var req = new SubscriptionRequest(SubscriptionPlan.BASIC, null);
+        var result = subscriptionService.subscribe(req, "member@example.com");
+
+        assertThat(result.billingCycle()).isEqualTo("monthly");
+        assertThat(result.totalBilled()).isEqualByComparingTo("199.00");
     }
 
     @Test
