@@ -12,6 +12,7 @@ import com.lendinglibrary.domain.exception.ResourceNotFoundException;
 import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
 import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
+import com.lendinglibrary.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class SubscriptionService {
             List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED);
 
     private final SubscriptionRepository subscriptionRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
     private final DomainEventPublisher events;
 
@@ -82,16 +84,25 @@ public class SubscriptionService {
                 .build();
         sub = subscriptionRepository.save(sub);
 
+        // Referral credit is spent automatically, capped at this bill's total;
+        // any leftover balance carries over to the next subscribe.
+        BigDecimal fullTotal = sub.getBillingCycle().totalBilled(sub.getMonthlyPrice());
+        BigDecimal creditApplied = user.getReferralCreditBalance().min(fullTotal);
+        if (creditApplied.compareTo(BigDecimal.ZERO) > 0) {
+            user.setReferralCreditBalance(user.getReferralCreditBalance().subtract(creditApplied));
+            userRepository.save(user);
+        }
+
         events.publish(Topics.SUBSCRIPTION_EVENTS, "subscription.changed", sub.getId().toString(), Map.of(
                 "userId", user.getId().toString(),
                 "userEmail", user.getEmail(),
                 "plan", sub.getPlan().name(),
                 "monthlyPrice", sub.getMonthlyPrice().toString(),
                 "billingCycle", sub.getBillingCycle().name(),
-                "totalBilled", sub.getBillingCycle().totalBilled(sub.getMonthlyPrice()).toString()
+                "totalBilled", fullTotal.subtract(creditApplied).toString()
         ));
 
-        return SubscriptionResponse.from(sub);
+        return SubscriptionResponse.from(sub, creditApplied);
     }
 
     /**

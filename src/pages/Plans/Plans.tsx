@@ -51,7 +51,12 @@ export default function Plans() {
       {
         onSuccess: (sub) => {
           setConfirming(null);
-          toast("success", `You're on the ${sub.plan} plan — happy reading!`);
+          toast(
+            "success",
+            sub.creditApplied > 0
+              ? `You're on the ${sub.plan} plan — ₹${sub.creditApplied} in referral credit was applied!`
+              : `You're on the ${sub.plan} plan — happy reading!`,
+          );
         },
         onError: (err) => {
           setConfirming(null);

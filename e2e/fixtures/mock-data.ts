@@ -329,6 +329,7 @@ export const MOCK_SUBSCRIPTION_BASIC = {
     pausedUntil: null,
     billingCycle: 'monthly',
     totalBilled: 299,
+    creditApplied: 0,
   },
 };
 
@@ -345,6 +346,24 @@ export const MOCK_SUBSCRIBE_STANDARD_SUCCESS = {
     pausedUntil: null,
     billingCycle: 'monthly',
     totalBilled: 499,
+    creditApplied: 0,
+  },
+};
+
+export const MOCK_SUBSCRIBE_WITH_REFERRAL_CREDIT_SUCCESS = {
+  success: true,
+  data: {
+    id: 'sub-3',
+    plan: 'standard',
+    monthlyPrice: 499,
+    startDate: daysFromNow(0),
+    endDate: null,
+    status: 'active',
+    maxConcurrentLoans: 4,
+    pausedUntil: null,
+    billingCycle: 'monthly',
+    totalBilled: 399,
+    creditApplied: 100,
   },
 };
 
@@ -376,12 +395,28 @@ export const MOCK_PROFILE = {
     role: 'member',
     phone: '+91 98765 43210',
     address: '12 Beach Road, Chennai',
+    referralCode: 'MEMBERSEED01',
+    referralCreditBalance: 0,
   },
 };
 
 export const MOCK_PROFILE_UPDATED = {
   success: true,
   data: { ...MOCK_PROFILE.data, name: 'Test Reader', phone: '+91 90000 00000' },
+};
+
+export const MOCK_PROFILE_WITH_CREDIT = {
+  success: true,
+  data: { ...MOCK_PROFILE.data, referralCreditBalance: 100 },
+};
+
+export const MOCK_REGISTER_WITH_REFERRAL_SUCCESS = {
+  success: true,
+  data: {
+    ...MOCK_USER,
+    email: 'referred@example.com',
+    name: 'Referred User',
+  },
 };
 
 // --- Admin (backend AdminUserResponse / AdminLoanResponse) ---

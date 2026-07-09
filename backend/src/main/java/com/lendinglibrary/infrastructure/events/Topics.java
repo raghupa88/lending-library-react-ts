@@ -8,6 +8,7 @@ public final class Topics {
     public static final String COURSE_EVENTS = "library.course.events";
     /** Reserved for the payments phase; no producer yet. */
     public static final String PAYMENT_EVENTS = "library.payment.events";
+    public static final String USER_EVENTS = "library.user.events";
 
     private Topics() {}
 }

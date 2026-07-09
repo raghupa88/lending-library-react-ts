@@ -8,6 +8,8 @@ import com.lendinglibrary.domain.enums.SubscriptionPlan;
 import com.lendinglibrary.domain.enums.SubscriptionStatus;
 import com.lendinglibrary.domain.exception.BusinessException;
 import com.lendinglibrary.domain.exception.UnauthorizedException;
+import com.lendinglibrary.infrastructure.events.DomainEventPublisher;
+import com.lendinglibrary.infrastructure.events.Topics;
 import com.lendinglibrary.infrastructure.persistence.SubscriptionRepository;
 import com.lendinglibrary.infrastructure.persistence.UserRepository;
 import com.lendinglibrary.infrastructure.security.JwtProvider;
@@ -18,22 +20,35 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final BigDecimal REFERRAL_CREDIT_AMOUNT = new BigDecimal("100.00");
+    private static final int REFERRAL_CODE_LENGTH = 8;
+    private static final int REFERRAL_CODE_MAX_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final DomainEventPublisher events;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
         if (userRepository.existsByEmail(req.email())) {
             throw new BusinessException("Email already in use: " + req.email());
         }
+
+        // An unknown or malformed code is silently ignored — a typo in a
+        // shared referral link shouldn't block someone from signing up.
+        User referrer = req.referralCode() == null || req.referralCode().isBlank()
+                ? null
+                : userRepository.findByReferralCode(req.referralCode().trim().toUpperCase()).orElse(null);
 
         User user = User.builder()
                 .email(req.email())
@@ -43,8 +58,21 @@ public class AuthService {
                 .role(Role.MEMBER)
                 .phone(req.phone())
                 .address(req.address())
+                .referralCode(generateUniqueReferralCode())
+                .referredBy(referrer)
                 .build();
         user = userRepository.save(user);
+
+        if (referrer != null) {
+            referrer.setReferralCreditBalance(referrer.getReferralCreditBalance().add(REFERRAL_CREDIT_AMOUNT));
+            userRepository.save(referrer);
+            events.publish(Topics.USER_EVENTS, "referral.credited", referrer.getId().toString(), Map.of(
+                    "userId", referrer.getId().toString(),
+                    "userEmail", referrer.getEmail(),
+                    "referredName", user.getFirstName() + " " + user.getLastName(),
+                    "creditAmount", REFERRAL_CREDIT_AMOUNT.toString()
+            ));
+        }
 
         // Auto-assign BASIC subscription on registration
         Subscription sub = Subscription.builder()
@@ -58,6 +86,18 @@ public class AuthService {
         subscriptionRepository.save(sub);
 
         return buildAuthResponse(user, sub.getPlan());
+    }
+
+    private String generateUniqueReferralCode() {
+        for (int attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt++) {
+            String candidate = UUID.randomUUID().toString().replace("-", "")
+                    .substring(0, REFERRAL_CODE_LENGTH).toUpperCase();
+            if (!userRepository.existsByReferralCode(candidate)) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException("Could not generate a unique referral code after "
+                + REFERRAL_CODE_MAX_ATTEMPTS + " attempts");
     }
 
     @Transactional

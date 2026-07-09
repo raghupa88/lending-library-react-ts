@@ -26,6 +26,7 @@ export interface Subscription {
   pausedUntil: string | null;
   billingCycle: BillingCycle;
   totalBilled: number;
+  creditApplied: number;
 }
 
 /** The backend uses Integer.MAX_VALUE for unlimited plans. */

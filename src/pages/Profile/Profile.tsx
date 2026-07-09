@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Copy } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useProfileQuery, useUpdateProfile } from "../../features/users/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -137,6 +138,48 @@ export default function Profile() {
           )}
         </CardContent>
       </Card>
+
+      {profile && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="font-display">Referrals</CardTitle>
+            <p className="text-sm text-muted">
+              Share your code — when a friend joins with it, you get ₹100 in library credit,
+              applied automatically on your next subscription.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <code className="rounded-(--radius-control) bg-surface-2 px-3 py-2 font-mono text-sm">
+                {profile.referralCode}
+              </code>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  const link = `${window.location.origin}/register?ref=${profile.referralCode}`;
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    toast("success", "Referral link copied");
+                  } catch {
+                    toast("error", "Couldn't copy the link");
+                  }
+                }}
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                Copy link
+              </Button>
+            </div>
+            <p className="text-sm">
+              Credit balance:{" "}
+              <span className="font-medium text-foreground">
+                ₹{profile.referralCreditBalance.toFixed(2)}
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

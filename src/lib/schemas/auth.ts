@@ -18,6 +18,12 @@ export const registerSchema = z
       .or(z.literal(""))
       .optional(),
     address: z.string().trim().max(200, "Keep the address under 200 characters").optional(),
+    referralCode: z
+      .string()
+      .trim()
+      .max(20, "Referral codes are shorter than that")
+      .or(z.literal(""))
+      .optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })

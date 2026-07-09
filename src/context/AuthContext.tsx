@@ -106,6 +106,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       password: data.password,
       phone: data.phone || undefined,
       address: data.address || undefined,
+      referralCode: data.referralCode || undefined,
     });
   };
 
