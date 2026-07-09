@@ -12,7 +12,7 @@ import java.util.UUID;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class BookBorrowCount {
 
-    @PrimaryKey
+    @PrimaryKey("book_id")
     private UUID bookId;
 
     @Column("borrow_count")

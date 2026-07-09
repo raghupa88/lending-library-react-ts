@@ -116,6 +116,17 @@ in ADR-008 as the navbar bell; Activity had no consumer until now).
   entirely and setting `spring.cassandra.keyspace-name` plus clearing
   `spring.autoconfigure.exclude` directly via `@TestPropertySource`, which
   always wins regardless of which `application.yml` is in play.
+- With those two fixed, CI's real Testcontainers Cassandra container
+  caught a genuine mapping bug: `BookBorrowCount.bookId`'s `@PrimaryKey`
+  had no explicit column name, so Spring Data Cassandra's default naming
+  strategy derived `bookid` (it lowercases but doesn't insert underscores
+  at camelCase boundaries) while `cql/schema.cql` defines the column as
+  `book_id` — every read/write through the entity (not the raw `@Query`
+  increment, which spells the column out literally) failed with "Undefined
+  column name bookid." Fixed with `@PrimaryKey("book_id")`, matching the
+  explicit `name = "..."` already given to every column on
+  `ActivityEntryKey` (whose test passed on the first real-Cassandra run,
+  confirming that entity's mapping was correct from the start).
 
 ## Consequences
 - Backend: full `mvn test` suite passes (191 tests, +15 new: `ActivityConsumerTest`
