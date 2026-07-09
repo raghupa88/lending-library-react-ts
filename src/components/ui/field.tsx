@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { useLocale } from "../../context/LocaleContext";
 import { cn } from "../../lib/cn";
 
 export interface FieldControlProps {
@@ -22,6 +23,7 @@ interface FieldProps {
  */
 export function Field({ label, error, hint, optional, className, children }: FieldProps) {
   const id = useId();
+  const { t } = useLocale();
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const describedBy =
@@ -31,7 +33,7 @@ export function Field({ label, error, hint, optional, className, children }: Fie
     <div className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-sm font-medium">
         {label}
-        {optional && <span className="ml-1 font-normal text-muted">(optional)</span>}
+        {optional && <span className="ml-1 font-normal text-muted">{t("common.optional")}</span>}
       </label>
       {children({ id, "aria-invalid": Boolean(error), "aria-describedby": describedBy })}
       {hint && !error && (

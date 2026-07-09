@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useLocale } from "../../context/LocaleContext";
 import { registerSchema, type RegisterFormValues } from "../../lib/schemas/auth";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Field } from "../../components/ui/field";
@@ -13,6 +14,7 @@ import { Button } from "../../components/ui/button";
 
 export default function Register() {
   const { register: registerAccount } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [serverError, setServerError] = useState("");
@@ -52,10 +54,8 @@ export default function Register() {
     <div className="mx-auto flex max-w-md items-center px-4 py-10 sm:px-6">
       <Card className="w-full">
         <CardHeader className="text-center">
-          <h1 className="font-display text-2xl font-semibold">Join Suvadi Library</h1>
-          <p className="text-sm text-muted">
-            Create an account to start borrowing — pick a plan afterwards.
-          </p>
+          <h1 className="font-display text-2xl font-semibold">{t("auth.registerTitle")}</h1>
+          <p className="text-sm text-muted">{t("auth.registerSubtitle")}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
@@ -69,7 +69,7 @@ export default function Register() {
               </p>
             )}
 
-            <Field label="Full name" error={errors.name?.message}>
+            <Field label={t("auth.fullName")} error={errors.name?.message}>
               {(props) => (
                 <Input
                   {...props}
@@ -80,7 +80,7 @@ export default function Register() {
               )}
             </Field>
 
-            <Field label="Email" error={errors.email?.message}>
+            <Field label={t("auth.emailLabel")} error={errors.email?.message}>
               {(props) => (
                 <Input
                   {...props}
@@ -93,10 +93,10 @@ export default function Register() {
             </Field>
 
             <Field
-              label="Phone"
+              label={t("auth.phone")}
               optional
               error={errors.phone?.message}
-              hint="Used for delivery updates on premium plans"
+              hint={t("auth.phoneHint")}
             >
               {(props) => (
                 <Input
@@ -109,7 +109,7 @@ export default function Register() {
               )}
             </Field>
 
-            <Field label="Delivery address" optional error={errors.address?.message}>
+            <Field label={t("auth.deliveryAddress")} optional error={errors.address?.message}>
               {(props) => (
                 <Textarea
                   {...props}
@@ -122,10 +122,10 @@ export default function Register() {
             </Field>
 
             <Field
-              label="Referral code"
+              label={t("auth.referralCode")}
               optional
               error={errors.referralCode?.message}
-              hint="Have a friend's code? They'll get ₹100 in library credit."
+              hint={t("auth.referralHint")}
             >
               {(props) => (
                 <Input
@@ -138,10 +138,10 @@ export default function Register() {
             </Field>
 
             <Field
-              label="Gift code"
+              label={t("auth.giftCode")}
               optional
               error={errors.giftCode?.message}
-              hint="Redeeming a gifted subscription? Enter its code here."
+              hint={t("auth.giftHint")}
             >
               {(props) => (
                 <Input
@@ -153,7 +153,7 @@ export default function Register() {
               )}
             </Field>
 
-            <Field label="Password" error={errors.password?.message} hint="At least 8 characters">
+            <Field label={t("auth.password")} error={errors.password?.message} hint={t("auth.passwordHint")}>
               {(props) => (
                 <Input
                   {...props}
@@ -164,7 +164,7 @@ export default function Register() {
               )}
             </Field>
 
-            <Field label="Confirm password" error={errors.confirmPassword?.message}>
+            <Field label={t("auth.confirmPassword")} error={errors.confirmPassword?.message}>
               {(props) => (
                 <Input
                   {...props}
@@ -176,17 +176,17 @@ export default function Register() {
             </Field>
 
             <Button type="submit" size="lg" disabled={isSubmitting} className="mt-1 w-full">
-              {isSubmitting ? "Creating account…" : "Create account"}
+              {isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}
             </Button>
           </form>
 
           <p className="mt-5 text-center text-sm text-muted">
-            Already a member?{" "}
+            {t("auth.alreadyMember")}{" "}
             <Link
               to={`/login${params.get("returnTo") ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
               className="font-medium text-accent hover:text-accent-hover"
             >
-              Sign in
+              {t("auth.signInButton")}
             </Link>
           </p>
         </CardContent>
