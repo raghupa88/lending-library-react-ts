@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import App from "../App";
 import { ThemeProvider } from "../context/ThemeContext";
+import { LocaleProvider } from "../context/LocaleContext";
 import { AuthProvider } from "../context/AuthContext";
 import { ToastProvider } from "../components/ui/toast";
 
@@ -15,11 +16,13 @@ function renderApp(route = "/") {
     <MemoryRouter initialEntries={[route]}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </MemoryRouter>,

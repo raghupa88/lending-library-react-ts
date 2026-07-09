@@ -29,6 +29,13 @@
   --ring: #b4552d;
 }
 
+/* Fraunces/Inter have no Tamil glyphs, so Tamil mode falls back entirely
+   to a single Tamil-script sans face for both display and body text. */
+[data-locale="ta"] {
+  --font-display: "Noto Sans Tamil Variable", "Fraunces Variable", Georgia, serif;
+  --font-sans: "Noto Sans Tamil Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
 [data-theme="dark"] {
   --background: #181410;
   --surface: #221d17;
