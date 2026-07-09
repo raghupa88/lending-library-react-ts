@@ -6,10 +6,13 @@ export interface Plan {
   id: string;
   name: string;
   price: number;
+  annualPrice: number;
   maxBooks: number;
   features: string[];
   popular: boolean;
 }
+
+export type BillingCycle = "monthly" | "annual";
 
 /** Matches backend SubscriptionResponse. */
 export interface Subscription {
@@ -21,6 +24,8 @@ export interface Subscription {
   status: string;
   maxConcurrentLoans: number;
   pausedUntil: string | null;
+  billingCycle: BillingCycle;
+  totalBilled: number;
 }
 
 /** The backend uses Integer.MAX_VALUE for unlimited plans. */
@@ -55,9 +60,12 @@ export function useCurrentSubscriptionQuery(enabled = true) {
 export function useSubscribe() {
   const queryClient = useQueryClient();
   return useMutation({
-    // Backend expects the enum name (BASIC/STANDARD/PREMIUM/FAMILY)
-    mutationFn: (planId: string) =>
-      api.post<Subscription>("/subscriptions", { plan: planId.toUpperCase() }),
+    // Backend expects the enum names (BASIC/STANDARD/PREMIUM/FAMILY, MONTHLY/ANNUAL)
+    mutationFn: ({ planId, billingCycle }: { planId: string; billingCycle: BillingCycle }) =>
+      api.post<Subscription>("/subscriptions", {
+        plan: planId.toUpperCase(),
+        billingCycle: billingCycle.toUpperCase(),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
     },

@@ -115,7 +115,11 @@ public class NotificationConsumer {
             }
             default -> {
                 title = "You're now on the " + plan + " plan";
-                body = "Your subscription change is active immediately.";
+                Object totalBilled = event.data().get("totalBilled");
+                boolean annual = "ANNUAL".equals(event.data().get("billingCycle"));
+                body = totalBilled == null
+                        ? "Your subscription change is active immediately."
+                        : "Billed " + (annual ? "annually" : "monthly") + " at ₹" + totalBilled + ".";
             }
         }
         saveAndEmail(user, event.type(), title, body);

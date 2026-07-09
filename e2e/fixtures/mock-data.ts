@@ -309,10 +309,10 @@ export const MOCK_CLAIM_RESERVATION_SUCCESS = {
 export const MOCK_PLANS = {
   success: true,
   data: [
-    { id: 'basic', name: 'Basic', price: 299, maxBooks: 2, features: ['2 books at a time', 'SMS notifications'], popular: false },
-    { id: 'standard', name: 'Standard', price: 499, maxBooks: 4, features: ['4 books at a time', 'WhatsApp support'], popular: true },
-    { id: 'premium', name: 'Premium', price: 799, maxBooks: 6, features: ['6 books at a time', 'Free home delivery'], popular: false },
-    { id: 'family', name: 'Family', price: 1199, maxBooks: 8, features: ['8 books at a time', 'Home delivery', 'Community events'], popular: false },
+    { id: 'basic', name: 'Basic', price: 299, annualPrice: 2990, maxBooks: 2, features: ['2 books at a time', 'SMS notifications'], popular: false },
+    { id: 'standard', name: 'Standard', price: 499, annualPrice: 4990, maxBooks: 4, features: ['4 books at a time', 'WhatsApp support'], popular: true },
+    { id: 'premium', name: 'Premium', price: 799, annualPrice: 7990, maxBooks: 6, features: ['6 books at a time', 'Free home delivery'], popular: false },
+    { id: 'family', name: 'Family', price: 1199, annualPrice: 11990, maxBooks: 8, features: ['8 books at a time', 'Home delivery', 'Community events'], popular: false },
   ],
 };
 
@@ -327,6 +327,8 @@ export const MOCK_SUBSCRIPTION_BASIC = {
     status: 'active',
     maxConcurrentLoans: 2,
     pausedUntil: null,
+    billingCycle: 'monthly',
+    totalBilled: 299,
   },
 };
 
@@ -341,7 +343,14 @@ export const MOCK_SUBSCRIBE_STANDARD_SUCCESS = {
     status: 'active',
     maxConcurrentLoans: 4,
     pausedUntil: null,
+    billingCycle: 'monthly',
+    totalBilled: 499,
   },
+};
+
+export const MOCK_SUBSCRIPTION_ANNUAL = {
+  success: true,
+  data: { ...MOCK_SUBSCRIPTION_BASIC.data, billingCycle: 'annual', totalBilled: 2990 },
 };
 
 export const MOCK_SUBSCRIPTION_PAUSED = {

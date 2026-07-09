@@ -531,8 +531,10 @@ export default function Dashboard() {
                     {subscription.status === "paused" && <Badge variant="warning">Paused</Badge>}
                   </div>
                   <p className="text-muted">
-                    ₹{subscription.monthlyPrice}/month ·{" "}
-                    {formatMaxBooks(subscription.maxConcurrentLoans).toLowerCase()}
+                    {subscription.billingCycle === "annual"
+                      ? `₹${subscription.totalBilled}/year`
+                      : `₹${subscription.monthlyPrice}/month`}{" "}
+                    · {formatMaxBooks(subscription.maxConcurrentLoans).toLowerCase()}
                   </p>
                   {subscription.status === "paused" && subscription.pausedUntil ? (
                     <p className="text-muted">
