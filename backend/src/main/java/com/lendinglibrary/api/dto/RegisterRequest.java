@@ -14,5 +14,7 @@ public record RegisterRequest(
         /** An unknown or malformed code is ignored rather than rejected — a typo shouldn't block signup. */
         String referralCode,
         /** An unknown, malformed, or already-redeemed gift code is ignored the same way. */
-        String giftCode
+        String giftCode,
+        /** An unknown, malformed, or full organization code is ignored the same way. */
+        String orgCode
 ) {}

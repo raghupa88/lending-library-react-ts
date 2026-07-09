@@ -63,6 +63,10 @@ import {
   MOCK_PURCHASE_GIFT_SUCCESS,
   MOCK_MY_GIFTS_EMPTY,
   MOCK_REDEEM_GIFT_SUCCESS,
+  MOCK_MY_ORGANIZATION_NONE,
+  MOCK_PURCHASE_ORGANIZATION_SUCCESS,
+  MOCK_JOIN_ORGANIZATION_SUCCESS,
+  MOCK_REMOVE_MEMBER_SUCCESS,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -429,6 +433,28 @@ export async function setupGiftsApiMocks(
   await page.route(`${API_BASE}/gifts`, (route) => route.fulfill(fulfill(purchase)));
 }
 
+export async function setupOrganizationsApiMocks(
+  page: Page,
+  {
+    mine = MOCK_MY_ORGANIZATION_NONE,
+    purchase = MOCK_PURCHASE_ORGANIZATION_SUCCESS,
+    join = MOCK_JOIN_ORGANIZATION_SUCCESS,
+    removeMember = MOCK_REMOVE_MEMBER_SUCCESS,
+  }: { mine?: unknown; purchase?: unknown; join?: unknown; removeMember?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/organizations/mine`, (route) => {
+    const isNone = mine === MOCK_MY_ORGANIZATION_NONE;
+    route.fulfill({
+      status: isNone ? 404 : 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mine),
+    });
+  });
+  await page.route(`${API_BASE}/organizations/join`, (route) => route.fulfill(fulfill(join)));
+  await page.route(`${API_BASE}/organizations/members/*`, (route) => route.fulfill(fulfill(removeMember)));
+  await page.route(`${API_BASE}/organizations`, (route) => route.fulfill(fulfill(purchase)));
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -445,4 +471,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupReservationsApiMocks(page);
   await setupOrdersApiMocks(page);
   await setupGiftsApiMocks(page);
+  await setupOrganizationsApiMocks(page);
 }

@@ -79,6 +79,10 @@ export default function Plans() {
           Buying for someone else?{" "}
           <Link to="/gift" className="font-medium text-accent hover:text-accent-hover">
             Send a gift subscription →
+          </Link>{" "}
+          · Running a school or company?{" "}
+          <Link to="/organization" className="font-medium text-accent hover:text-accent-hover">
+            Set up a business account →
           </Link>
         </p>
       </div>

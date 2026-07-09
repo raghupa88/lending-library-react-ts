@@ -106,6 +106,21 @@ public class SubscriptionService {
         return SubscriptionResponse.from(sub);
     }
 
+    /**
+     * Cancels a member's active subscription with no replacement — used when
+     * an organization owner removes a member from their B2B plan. The member
+     * would need to personally subscribe again if they want to keep borrowing.
+     */
+    @Transactional
+    public void cancelActiveSubscription(User user) {
+        subscriptionRepository.findByUserAndStatusIn(user, NON_TERMINAL)
+                .ifPresent(s -> {
+                    s.setStatus(SubscriptionStatus.CANCELLED);
+                    s.setEndDate(LocalDateTime.now());
+                    subscriptionRepository.save(s);
+                });
+    }
+
     /** Single source of truth for plan sticker prices — also used to price a gift purchase. */
     public BigDecimal priceFor(SubscriptionPlan plan) {
         return switch (plan) {

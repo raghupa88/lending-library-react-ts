@@ -22,6 +22,7 @@ export default function Register() {
   const returnTo = params.get("returnTo") || "/dashboard";
   const referralCodeFromLink = params.get("ref") ?? "";
   const giftCodeFromLink = params.get("gift") ?? "";
+  const orgCodeFromLink = params.get("org") ?? "";
 
   const {
     register,
@@ -29,7 +30,11 @@ export default function Register() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { referralCode: referralCodeFromLink, giftCode: giftCodeFromLink },
+    defaultValues: {
+      referralCode: referralCodeFromLink,
+      giftCode: giftCodeFromLink,
+      orgCode: orgCodeFromLink,
+    },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
@@ -43,6 +48,7 @@ export default function Register() {
         address: values.address ?? "",
         referralCode: values.referralCode ?? "",
         giftCode: values.giftCode ?? "",
+        orgCode: values.orgCode ?? "",
       });
       navigate(returnTo, { replace: true });
     } catch (err) {
@@ -149,6 +155,22 @@ export default function Register() {
                   autoComplete="off"
                   placeholder="e.g. XYZ98765"
                   {...register("giftCode")}
+                />
+              )}
+            </Field>
+
+            <Field
+              label="Organization code"
+              optional
+              error={errors.orgCode?.message}
+              hint="Joining your school or employer's plan? Enter its code here."
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  autoComplete="off"
+                  placeholder="e.g. ORGCODE1"
+                  {...register("orgCode")}
                 />
               )}
             </Field>

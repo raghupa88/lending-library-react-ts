@@ -421,6 +421,51 @@ export const MOCK_REGISTER_WITH_GIFT_SUCCESS = {
   data: { ...MOCK_USER, email: 'giftee@example.com', name: 'Giftee User', plan: 'premium' },
 };
 
+// --- Organizations / B2B tier (backend OrganizationResponse) ---
+
+export const MOCK_ORG_MEMBER = {
+  userId: 'member-1',
+  name: 'Team Member',
+  email: 'teammate@example.com',
+  joinedAt: daysFromNow(-3),
+};
+
+export const MOCK_ORGANIZATION = {
+  id: 'org-1',
+  name: 'Chennai Public School',
+  plan: 'premium',
+  billingCycle: 'monthly',
+  seatsTotal: 10,
+  seatsUsed: 1,
+  joinCode: 'ORGCODE1',
+  amountPaid: 3990,
+  createdAt: daysFromNow(-5),
+  members: [MOCK_ORG_MEMBER],
+};
+
+export const MOCK_ORGANIZATION_EMPTY_ROSTER = { ...MOCK_ORGANIZATION, seatsUsed: 0, members: [] };
+
+export const MOCK_MY_ORGANIZATION_NONE = { success: false, error: 'Not found' };
+export const MOCK_MY_ORGANIZATION = { success: true, data: MOCK_ORGANIZATION };
+
+export const MOCK_PURCHASE_ORGANIZATION_SUCCESS = {
+  success: true,
+  data: { ...MOCK_ORGANIZATION, seatsUsed: 0, members: [] },
+};
+
+export const MOCK_JOIN_ORGANIZATION_SUCCESS = {
+  success: true,
+  data: { ...MOCK_SUBSCRIBE_STANDARD_SUCCESS.data, plan: 'premium', creditApplied: 0 },
+};
+export const MOCK_JOIN_ORGANIZATION_FAILURE = { success: false, error: 'Unknown organization code' };
+
+export const MOCK_REMOVE_MEMBER_SUCCESS = { success: true, data: null };
+
+export const MOCK_REGISTER_WITH_ORG_SUCCESS = {
+  success: true,
+  data: { ...MOCK_USER, email: 'orgmember@example.com', name: 'Org Member', plan: 'premium' },
+};
+
 // --- Users (backend UserResponse) ---
 
 export const MOCK_PROFILE = {

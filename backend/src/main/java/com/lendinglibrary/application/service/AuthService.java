@@ -38,6 +38,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final DomainEventPublisher events;
     private final GiftService giftService;
+    private final OrganizationService organizationService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -81,6 +82,13 @@ public class AuthService {
         var redeemedGift = giftService.redeemAtRegistration(user, req.giftCode());
         if (redeemedGift.isPresent()) {
             return buildAuthResponse(user, redeemedGift.get().getPlan());
+        }
+
+        // Same idea for a business-account join code — checked after gift
+        // codes, so a personal gift takes priority if someone somehow has both.
+        var joinedOrg = organizationService.joinAtRegistration(user, req.orgCode());
+        if (joinedOrg.isPresent()) {
+            return buildAuthResponse(user, joinedOrg.get().getPlan());
         }
 
         // Auto-assign BASIC subscription on registration

@@ -30,6 +30,12 @@ export const registerSchema = z
       .max(20, "Gift codes are shorter than that")
       .or(z.literal(""))
       .optional(),
+    orgCode: z
+      .string()
+      .trim()
+      .max(20, "Organization codes are shorter than that")
+      .or(z.literal(""))
+      .optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
