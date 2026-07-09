@@ -94,6 +94,29 @@ in ADR-008 as the navbar bell; Activity had no consumer until now).
    will actually see. Admin Overview gets a "Trending books" card fed by
    `/admin/books/trending`, same empty-state treatment.
 
+## Errors found and fixed
+- **`backend/src/test/resources/application.yml` replaces — not merges
+  with — the main `application.yml` on the test classpath** (its own
+  header comment says so). The `spring.autoconfigure.exclude` addition to
+  the main file therefore never reached any test, including the existing
+  `FlywayMigrationIT`/`PaymentAuditTransactionIT`, which broke on the
+  first CI run with a `CqlSession` connection failure cascading up through
+  the actuator health-contributor registry into `SecurityConfig`'s
+  `filterChain` bean (every non-Cassandra-aware `@SpringBootTest` that
+  boots the real app depends on it transitively). Fixed by repeating the
+  same exclusion list in the test-classpath file, per its own documented
+  policy.
+- `CassandraSchemaIT` originally used `@ActiveProfiles("cassandra")` to
+  pick up the `cassandra` profile's `keyspace-name`/exclude-cancelling
+  block from the main `application.yml` — which, for the same
+  file-replacement reason above, never applied either. CI's real
+  Testcontainers Cassandra container connected successfully (proving the
+  container/init-script mechanics work), but every query failed with "No
+  keyspace has been specified." Fixed by dropping the profile dependency
+  entirely and setting `spring.cassandra.keyspace-name` plus clearing
+  `spring.autoconfigure.exclude` directly via `@TestPropertySource`, which
+  always wins regardless of which `application.yml` is in play.
+
 ## Consequences
 - Backend: full `mvn test` suite passes (191 tests, +15 new: `ActivityConsumerTest`
   covering every event type plus redelivery/idempotency, `CassandraActivityQueryServiceTest`,

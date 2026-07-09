@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -25,9 +25,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * does for Postgres. `withInitScript` runs schema.cql (keyspace + both
  * tables) before the Spring context connects, mirroring what the
  * `cassandra-init` compose service does against a real cluster (ADR-025).
+ *
+ * <p>{@code spring.autoconfigure.exclude} is cleared here (rather than via
+ * the {@code cassandra} Spring profile, as production deployments use)
+ * because {@code src/test/resources/application.yml} replaces — not
+ * merges with — the main config on the test classpath, so a profile
+ * document living only in the main file would never apply to a test.
+ * {@code @TestPropertySource} always wins regardless of that, and
+ * {@code @ServiceConnection} supplies the contact-points/port/datacenter
+ * directly, so only the keyspace name needs setting explicitly.
  */
 @SpringBootTest
-@ActiveProfiles("cassandra")
+@TestPropertySource(properties = {
+        "spring.autoconfigure.exclude=",
+        "spring.cassandra.keyspace-name=lending_library",
+})
 @Testcontainers
 class CassandraSchemaIT {
 
