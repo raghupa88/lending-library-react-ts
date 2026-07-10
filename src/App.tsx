@@ -9,6 +9,7 @@ import VenuesAdmin from "./pages/Admin/VenuesAdmin";
 import LearnAnalytics from "./pages/Admin/LearnAnalytics";
 import MembersAdmin from "./pages/Admin/MembersAdmin";
 import LoansAdmin from "./pages/Admin/LoansAdmin";
+import FeatureFlagsAdmin from "./pages/Admin/FeatureFlagsAdmin";
 import { LoadingSpinner } from "./components/ui/loading";
 import Home from "./pages/Home/Home";
 import Books from "./pages/Books/Books";
@@ -145,6 +146,7 @@ export default function App() {
         <Route path="/admin/learn/analytics" element={<LearnAnalytics />} />
         <Route path="/admin/members" element={<MembersAdmin />} />
         <Route path="/admin/loans" element={<LoansAdmin />} />
+        <Route path="/admin/feature-flags" element={<FeatureFlagsAdmin />} />
       </Route>
     </Routes>
   );

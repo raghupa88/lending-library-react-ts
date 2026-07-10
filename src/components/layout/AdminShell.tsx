@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users, BookMarked, GraduationCap, MapPin, BarChart3, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, BookMarked, GraduationCap, MapPin, BarChart3, ArrowLeft, ToggleLeft } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Avatar } from "../ui/avatar";
 import { cn } from "../../lib/cn";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/admin/learn/analytics", label: "Analytics", icon: BarChart3, end: false },
   { to: "/admin/members", label: "Members", icon: Users, end: false },
   { to: "/admin/loans", label: "Loans", icon: BookMarked, end: false },
+  { to: "/admin/feature-flags", label: "Feature flags", icon: ToggleLeft, end: false },
 ];
 
 export function AdminShell() {

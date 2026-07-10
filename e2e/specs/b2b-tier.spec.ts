@@ -5,6 +5,7 @@ import {
   setupBooksApiMock,
   setupRegisterApiMock,
   setupOrganizationsApiMocks,
+  setupFeatureFlagsApiMocks,
 } from '../helpers/api-mocks';
 import {
   MOCK_MY_ORGANIZATION,
@@ -114,6 +115,7 @@ authTest('removing a member shows a success toast', async ({ authenticatedPage: 
 
 test('register page prefills the organization code from an ?org= link', async ({ page }) => {
   await setupBooksApiMock(page);
+  await setupFeatureFlagsApiMocks(page);
   await page.goto('/register?org=ORGCODE1');
   await expect(page.getByLabel('Organization code')).toHaveValue('ORGCODE1');
 });

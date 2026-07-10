@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { BookOpen } from "lucide-react";
 import { useLocale } from "../../context/LocaleContext";
+import { useIsFeatureEnabled } from "../../features/feature-flags/queries";
 
 export function Footer() {
   const { t } = useLocale();
+  const b2bTierEnabled = useIsFeatureEnabled("b2b_tier");
   return (
     <footer className="mt-16 border-t border-border bg-surface-2">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 md:grid-cols-3">
@@ -32,11 +34,13 @@ export function Footer() {
                 {t("footer.giftSubscription")}
               </Link>
             </li>
-            <li>
-              <Link to="/organization" className="text-muted hover:text-foreground">
-                For schools & businesses
-              </Link>
-            </li>
+            {b2bTierEnabled && (
+              <li>
+                <Link to="/organization" className="text-muted hover:text-foreground">
+                  For schools & businesses
+                </Link>
+              </li>
+            )}
             <li>
               <Link to="/login" className="text-muted hover:text-foreground">
                 {t("footer.signIn")}

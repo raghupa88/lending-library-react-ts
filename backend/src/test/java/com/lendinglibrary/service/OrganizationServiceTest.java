@@ -3,6 +3,8 @@ package com.lendinglibrary.service;
 import com.lendinglibrary.api.dto.OrganizationPurchaseRequest;
 import com.lendinglibrary.api.dto.PaymentInput;
 import com.lendinglibrary.api.dto.SubscriptionResponse;
+import com.lendinglibrary.application.service.FeatureFlagKeys;
+import com.lendinglibrary.application.service.FeatureFlagService;
 import com.lendinglibrary.application.service.OrganizationService;
 import com.lendinglibrary.application.service.PaymentService;
 import com.lendinglibrary.application.service.SubscriptionService;
@@ -51,6 +53,7 @@ class OrganizationServiceTest {
     @Mock UserService userService;
     @Mock SubscriptionService subscriptionService;
     @Mock PaymentService paymentService;
+    @Mock FeatureFlagService featureFlagService;
     @InjectMocks OrganizationService organizationService;
 
     private User owner;
@@ -61,6 +64,8 @@ class OrganizationServiceTest {
         owner = User.builder().id(UUID.randomUUID()).email("owner@example.com")
                 .firstName("Owen").lastName("Owner").role(Role.MEMBER).build();
         validCard = new PaymentInput("Owen Owner", "4242424242424242", "12", "2030", "123");
+        // lenient: the one blank-code registration test never reaches this check.
+        org.mockito.Mockito.lenient().when(featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)).thenReturn(true);
     }
 
     @Test
@@ -297,5 +302,35 @@ class OrganizationServiceTest {
         assertThatThrownBy(() -> organizationService.removeMember("owner@example.com", stranger.getId()))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("isn't a member");
+    }
+
+    @Test
+    void purchase_b2bTierDisabled_throws() {
+        when(featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)).thenReturn(false);
+        var req = new OrganizationPurchaseRequest("Chennai School", SubscriptionPlan.BASIC, BillingCycle.MONTHLY, 5, validCard);
+
+        assertThatThrownBy(() -> organizationService.purchase(req, "owner@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("not available right now");
+    }
+
+    @Test
+    void join_b2bTierDisabled_throws() {
+        when(featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)).thenReturn(false);
+
+        assertThatThrownBy(() -> organizationService.join("orgcode1", "member@example.com"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("not available right now");
+    }
+
+    @Test
+    void joinAtRegistration_b2bTierDisabled_returnsEmpty_noLookup() {
+        when(featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)).thenReturn(false);
+        User newUser = User.builder().id(UUID.randomUUID()).email("new@example.com").role(Role.MEMBER).build();
+
+        var result = organizationService.joinAtRegistration(newUser, "orgcode1");
+
+        assertThat(result).isEmpty();
+        verify(organizationRepository, never()).findByJoinCode(any());
     }
 }

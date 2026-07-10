@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useLocale } from "../../context/LocaleContext";
+import { useIsFeatureEnabled } from "../../features/feature-flags/queries";
 import { registerSchema, type RegisterFormValues } from "../../lib/schemas/auth";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Field } from "../../components/ui/field";
@@ -15,6 +16,7 @@ import { Button } from "../../components/ui/button";
 export default function Register() {
   const { register: registerAccount } = useAuth();
   const { t } = useLocale();
+  const b2bTierEnabled = useIsFeatureEnabled("b2b_tier");
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [serverError, setServerError] = useState("");
@@ -159,21 +161,23 @@ export default function Register() {
               )}
             </Field>
 
-            <Field
-              label="Organization code"
-              optional
-              error={errors.orgCode?.message}
-              hint="Joining your school or employer's plan? Enter its code here."
-            >
-              {(props) => (
-                <Input
-                  {...props}
-                  autoComplete="off"
-                  placeholder="e.g. ORGCODE1"
-                  {...register("orgCode")}
-                />
-              )}
-            </Field>
+            {b2bTierEnabled && (
+              <Field
+                label="Organization code"
+                optional
+                error={errors.orgCode?.message}
+                hint="Joining your school or employer's plan? Enter its code here."
+              >
+                {(props) => (
+                  <Input
+                    {...props}
+                    autoComplete="off"
+                    placeholder="e.g. ORGCODE1"
+                    {...register("orgCode")}
+                  />
+                )}
+              </Field>
+            )}
 
             <Field label={t("auth.password")} error={errors.password?.message} hint={t("auth.passwordHint")}>
               {(props) => (
