@@ -26,18 +26,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * tables) before the Spring context connects, mirroring what the
  * `cassandra-init` compose service does against a real cluster (ADR-025).
  *
- * <p>{@code spring.autoconfigure.exclude} is cleared here (rather than via
- * the {@code cassandra} Spring profile, as production deployments use)
- * because {@code src/test/resources/application.yml} replaces — not
+ * <p>{@code spring.autoconfigure.exclude} is overridden here (rather than
+ * via the {@code cassandra} Spring profile, as production deployments
+ * use) because {@code src/test/resources/application.yml} replaces — not
  * merges with — the main config on the test classpath, so a profile
  * document living only in the main file would never apply to a test.
  * {@code @TestPropertySource} always wins regardless of that, and
  * {@code @ServiceConnection} supplies the contact-points/port/datacenter
- * directly, so only the keyspace name needs setting explicitly.
+ * directly, so only the keyspace name needs setting explicitly. The
+ * override re-enables only Cassandra's own auto-configuration classes,
+ * not the whole shared list (see ADR-026) — Elasticsearch's REST client
+ * happens to be lazy enough not to break from that today, but relying on
+ * that instead of being explicit would be fragile.
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-        "spring.autoconfigure.exclude=",
+        "spring.autoconfigure.exclude="
+                + "org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration",
         "spring.cassandra.keyspace-name=lending_library",
 })
 @Testcontainers

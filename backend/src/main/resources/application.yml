@@ -7,12 +7,20 @@ spring:
   # bean connects synchronously and fails startup if nothing answers on
   # the contact point — so (unlike Kafka) it isn't safe to just leave the
   # starter's auto-configuration enabled and rely on laziness. Excluded by
-  # default; the cassandra profile below cancels this exclusion.
+  # default; the cassandra/elasticsearch profiles below cancel this
+  # exclusion. Elasticsearch's REST client itself connects lazily, but its
+  # actuator health contributor (wired transitively into every bean that
+  # depends on the security filterChain — found the hard way in ADR-025)
+  # probes the cluster eagerly, so it gets the same treatment.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
   jpa:
     # Flyway owns the schema; Hibernate only validates entities against it.
     hibernate:
@@ -153,6 +161,14 @@ spring:
   config:
     activate:
       on-profile: cassandra
+  # Clears the *entire* exclude list (not just Cassandra's 3 classes) —
+  # correct here because docker-compose always activates cassandra and
+  # elasticsearch together in this project's real deployment, so clearing
+  # to the same empty list from either profile's document has the same net
+  # effect. Tests that activate only one of the two (CassandraSchemaIT,
+  # ElasticsearchSearchIT) can't use this shortcut — confirmed by a real CI
+  # failure — and instead override with an explicit, surgical list that
+  # re-enables just the one technology under test (see ADR-026).
   autoconfigure:
     exclude: []
   cassandra:
@@ -161,3 +177,23 @@ spring:
     port: ${CASSANDRA_PORT:9042}
     local-datacenter: ${CASSANDRA_DATACENTER:datacenter1}
     schema-action: none
+
+---
+# Elasticsearch profile: activates the BookSearchConsumer
+# (@Profile("kafka & elasticsearch")) and the real Elasticsearch-backed
+# BookSearchQueryService (@Profile("elasticsearch")) that GET /books
+# delegates to; without it, BookService falls back to the same Postgres
+# LIKE-query search this app always had (see ADR-026). The index itself is
+# created by the app on first connect (see BookSearchIndexInitializer) —
+# a plain mapping, no migration tool needed the way Cassandra's CQL is.
+spring:
+  config:
+    activate:
+      on-profile: elasticsearch
+  # Clears the entire exclude list — see the cassandra profile above for
+  # why that's correct here but not in a test that isolates just one of
+  # the two technologies.
+  autoconfigure:
+    exclude: []
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}

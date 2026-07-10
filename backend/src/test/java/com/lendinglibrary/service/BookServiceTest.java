@@ -1,5 +1,8 @@
 package com.lendinglibrary.service;
 
+import com.lendinglibrary.api.dto.BookResponse;
+import com.lendinglibrary.api.envelope.PagedResponse;
+import com.lendinglibrary.application.service.BookSearchQueryService;
 import com.lendinglibrary.application.service.BookService;
 import com.lendinglibrary.domain.entity.Book;
 import com.lendinglibrary.domain.exception.ResourceNotFoundException;
@@ -26,6 +29,7 @@ import static org.mockito.Mockito.when;
 class BookServiceTest {
 
     @Mock BookRepository bookRepository;
+    @Mock BookSearchQueryService bookSearchQueryService;
     @InjectMocks BookService bookService;
 
     private Book makeBook(String title) {
@@ -35,11 +39,11 @@ class BookServiceTest {
     }
 
     @Test
-    void list_returnsPagedResponse() {
+    void list_delegatesToSearchQueryService() {
         var books = List.of(makeBook("Book A"), makeBook("Book B"));
-        var page = new PageImpl<>(books, PageRequest.of(0, 20), 2);
-        when(bookRepository.findWithFilters(isNull(), isNull(), isNull(), isNull(), any()))
-                .thenReturn(page);
+        var page = new PageImpl<>(books.stream().map(BookResponse::from).toList(), PageRequest.of(0, 20), 2);
+        when(bookSearchQueryService.search(isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
+                .thenReturn(PagedResponse.from(page));
 
         var result = bookService.list(null, null, null, null, 0, 20);
 

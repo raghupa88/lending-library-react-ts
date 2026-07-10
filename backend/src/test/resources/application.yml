@@ -17,11 +17,15 @@ spring:
     hibernate:
       ddl-auto: validate
   # See src/main/resources/application.yml for why this is needed: unlike
-  # Kafka, a Cassandra CqlSession bean connects synchronously at startup
-  # and fails hard if nothing answers — excluded here too since this file
-  # replaces (not merges with) the main one.
+  # Kafka, Cassandra/Elasticsearch client beans either connect eagerly or
+  # get eagerly health-checked at startup — excluded here too since this
+  # file replaces (not merges with) the main one.
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration

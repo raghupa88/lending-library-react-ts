@@ -1,0 +1,33 @@
+# Ships the backend container's ECS-JSON stdout logs to Elasticsearch —
+# see docker-compose.yml's filebeat service comment and ADR-026 for why
+# this only works on Linux Docker hosts as written.
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+      templates:
+        - condition:
+            contains:
+              docker.container.image: backend
+          config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+
+processors:
+  - add_docker_metadata: ~
+  # logback-spring.xml's `docker` profile already emits one ECS-JSON object
+  # per line (see LogstashEncoder config) — decode it back out of Docker's
+  # own log-line wrapper so Kibana sees real fields, not an opaque string.
+  - decode_json_fields:
+      fields: ["message"]
+      target: ""
+      overwrite_keys: true
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "lending-library-logs-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: false
+setup.template.name: "lending-library-logs"
+setup.template.pattern: "lending-library-logs-*"
