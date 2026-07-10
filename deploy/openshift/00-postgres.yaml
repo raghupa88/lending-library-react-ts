@@ -1,0 +1,95 @@
+# Minimal Postgres for a CRC demo — NOT how you'd run Postgres in a real
+# OpenShift cluster. A real deployment would use a managed database or an
+# operator (e.g. Crunchy Postgres Operator, EDB) for backups, failover,
+# and upgrades; this bare Deployment+PVC exists only so `oc apply -f
+# deploy/openshift/` gives a working single-node demo on CRC. See
+# ADR-027 for the full scoping rationale (Kafka/Cassandra/Elasticsearch
+# are deliberately not included here either, for the same reason).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # a single ReadWriteOnce PVC can't be mounted by two pods at once
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: lendinglibrary
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: lending-library-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: lending-library-secrets
+                  key: DB_PASSWORD
+            # Arbitrary-UID note: the official postgres image assumes it
+            # can chown its data directory to a fixed UID at startup,
+            # which OpenShift's restricted SCC (a random, unprivileged
+            # UID with no chown rights on this PVC's existing ownership)
+            # blocks. PGDATA under a subdirectory works around the most
+            # common failure mode (the volume root already being owned by
+            # root); a real deployment would use an OpenShift-certified
+            # Postgres image built for arbitrary UIDs instead of patching
+            # around the upstream one like this.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "lendinglibrary"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "lendinglibrary"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

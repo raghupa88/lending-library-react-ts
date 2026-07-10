@@ -1,0 +1,133 @@
+# BuildConfig + ImageStream: `oc start-build backend --from-dir=. --follow`
+# from the repo root builds backend/Dockerfile via a binary Docker-strategy
+# build (no external registry needed — the result lands in this project's
+# own OpenShift-internal ImageStream). See deploy/openshift/README.md.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: backend
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: backend
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: backend/Dockerfile
+  output:
+    to:
+      kind: ImageStreamTag
+      name: backend:latest
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  # Deliberately postgres+docker only — no kafka/cassandra/elasticsearch
+  # profile here. Those need Kafka (Strimzi), a Cassandra operator, and
+  # ECK respectively in a real OpenShift cluster, and CRC's single-node
+  # resource envelope isn't sized for the full stack anyway; see ADR-027.
+  SPRING_PROFILES_ACTIVE: "postgres,docker"
+  DB_URL: "jdbc:postgresql://postgres:5432/lendinglibrary"
+  CORS_ALLOWED_ORIGINS: "" # set to the frontend Route's URL after `oc get route frontend`
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+  # A plain Deployment (not the deprecated DeploymentConfig) has no
+  # built-in ImageStream trigger, but this annotation gives it one:
+  # OpenShift's image-trigger controller patches the container's `image`
+  # field to the ImageStream's resolved registry path whenever
+  # backend:latest changes — no manual namespace substitution needed,
+  # and no separate DeploymentConfig object either.
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"backend:latest"},
+        "fieldPath":"spec.template.spec.containers[?(@.name==\"backend\")].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # No fixed runAsUser/fsGroup — OpenShift's restricted SCC assigns a
+      # random UID (always in group 0) per project at admission time; the
+      # image's own `chown -R 1001:0 && chmod -R g=u` (backend/Dockerfile)
+      # is what makes that arbitrary UID actually work, not this manifest.
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          # Placeholder — overwritten by the image-trigger annotation above
+          # the first time `oc start-build backend` publishes an image.
+          image: "backend:latest"
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: lending-library-secrets, key: DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: lending-library-secrets, key: DB_PASSWORD } }
+            - name: JWT_SECRET
+              valueFrom: { secretKeyRef: { name: lending-library-secrets, key: JWT_SECRET } }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: false # the JRE + Spring Boot need a writable /tmp
+          # Reuses the same actuator probes ADR-006/007 already exposed for
+          # local/Docker health checks — nothing new needed for OpenShift.
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 250m, memory: 384Mi }
+            limits: { cpu: "1", memory: 768Mi }
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: backend
+spec:
+  to:
+    kind: Service
+    name: backend
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
