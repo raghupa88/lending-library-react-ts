@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/books", "/api/v1/books/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/subscriptions/plans").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/feature-flags").permitAll()
                 // More specific first: progress and tests are per-learner and
                 // must stay authenticated even though the broader courses/**
                 // browse routes below are public.

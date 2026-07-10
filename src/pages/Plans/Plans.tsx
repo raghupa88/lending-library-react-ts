@@ -10,6 +10,7 @@ import {
   type Plan,
   type BillingCycle,
 } from "../../features/subscriptions/queries";
+import { useIsFeatureEnabled } from "../../features/feature-flags/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -28,6 +29,7 @@ export default function Plans() {
   const location = useLocation();
   const [confirming, setConfirming] = useState<Plan | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const b2bTierEnabled = useIsFeatureEnabled("b2b_tier");
 
   const { data: plans, isLoading, isError } = usePlansQuery();
   const { data: subscription } = useCurrentSubscriptionQuery(Boolean(user));
@@ -79,11 +81,16 @@ export default function Plans() {
           Buying for someone else?{" "}
           <Link to="/gift" className="font-medium text-accent hover:text-accent-hover">
             Send a gift subscription →
-          </Link>{" "}
-          · Running a school or company?{" "}
-          <Link to="/organization" className="font-medium text-accent hover:text-accent-hover">
-            Set up a business account →
           </Link>
+          {b2bTierEnabled && (
+            <>
+              {" "}
+              · Running a school or company?{" "}
+              <Link to="/organization" className="font-medium text-accent hover:text-accent-hover">
+                Set up a business account →
+              </Link>
+            </>
+          )}
         </p>
       </div>
 

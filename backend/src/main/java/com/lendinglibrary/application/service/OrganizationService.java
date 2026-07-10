@@ -45,9 +45,11 @@ public class OrganizationService {
     private final UserService userService;
     private final SubscriptionService subscriptionService;
     private final PaymentService paymentService;
+    private final FeatureFlagService featureFlagService;
 
     @Transactional
     public OrganizationResponse purchase(OrganizationPurchaseRequest req, String ownerEmail) {
+        requireB2bTierEnabled();
         User owner = userService.findByEmail(ownerEmail);
         if (organizationRepository.existsByOwner(owner)) {
             throw new BusinessException("You already have a business account");
@@ -89,6 +91,7 @@ public class OrganizationService {
     /** Joining while already signed in — an unknown/full code is a real error, not silently ignored. */
     @Transactional
     public SubscriptionResponse join(String rawCode, String memberEmail) {
+        requireB2bTierEnabled();
         User member = userService.findByEmail(memberEmail);
         if (organizationMemberRepository.existsByUser(member)) {
             throw new BusinessException("You're already part of an organization");
@@ -104,11 +107,12 @@ public class OrganizationService {
     /**
      * Joining as part of registration — an unknown, full, or already-a-member
      * code is silently ignored (registration must still succeed), mirroring
-     * how an unknown referral/gift code is handled.
+     * how an unknown referral/gift code is handled. A disabled b2b_tier flag
+     * gets the same silent-skip treatment, not an error, for the same reason.
      */
     @Transactional
     public Optional<Organization> joinAtRegistration(User newUser, String rawCode) {
-        if (rawCode == null || rawCode.isBlank()) {
+        if (rawCode == null || rawCode.isBlank() || !featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)) {
             return Optional.empty();
         }
         return organizationRepository.findByJoinCode(normalize(rawCode))
@@ -143,6 +147,16 @@ public class OrganizationService {
         org.setSeatsUsed(org.getSeatsUsed() + 1);
         organizationRepository.save(org);
         return subscriptionService.activateGiftedPlan(member, org.getPlan(), org.getBillingCycle());
+    }
+
+    /** Purchasing and logged-in joins are hard errors when disabled — unlike
+     * {@link #joinAtRegistration}, both are explicit, deliberate actions
+     * where failing silently would hide a real problem from the one person
+     * who needs to know (same asymmetry as ADR-022's gift-code handling). */
+    private void requireB2bTierEnabled() {
+        if (!featureFlagService.isEnabled(FeatureFlagKeys.B2B_TIER)) {
+            throw new BusinessException("Business accounts are not available right now");
+        }
     }
 
     private String normalize(String rawCode) {

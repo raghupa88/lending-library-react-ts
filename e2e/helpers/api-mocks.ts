@@ -69,6 +69,10 @@ import {
   MOCK_REMOVE_MEMBER_SUCCESS,
   MOCK_ACTIVITY_EMPTY,
   MOCK_TRENDING_BOOKS_EMPTY,
+  MOCK_ENABLED_FLAGS,
+  MOCK_ADMIN_FEATURE_FLAGS,
+  MOCK_CREATE_FLAG_SUCCESS,
+  MOCK_TOGGLE_FLAG_DISABLED,
 } from '../fixtures/mock-data';
 
 const API_BASE = 'http://localhost:8080/api/v1';
@@ -466,6 +470,25 @@ export async function setupOrganizationsApiMocks(
   await page.route(`${API_BASE}/organizations`, (route) => route.fulfill(fulfill(purchase)));
 }
 
+export async function setupFeatureFlagsApiMocks(
+  page: Page,
+  {
+    enabled = MOCK_ENABLED_FLAGS,
+    admin = MOCK_ADMIN_FEATURE_FLAGS,
+    created = MOCK_CREATE_FLAG_SUCCESS,
+    toggled = MOCK_TOGGLE_FLAG_DISABLED,
+  }: { enabled?: unknown; admin?: unknown; created?: unknown; toggled?: unknown } = {},
+) {
+  await page.route(`${API_BASE}/feature-flags`, (route) => route.fulfill(fulfill(enabled)));
+  await page.route(`${API_BASE}/admin/feature-flags/*`, (route) => route.fulfill(fulfill(toggled)));
+  await page.route(`${API_BASE}/admin/feature-flags`, (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill(fulfill(created));
+    }
+    return route.fulfill(fulfill(admin));
+  });
+}
+
 export async function setupAllApiMocks(page: Page) {
   await setupBookDetailApiMock(page);
   await setupBooksApiMock(page);
@@ -484,4 +507,5 @@ export async function setupAllApiMocks(page: Page) {
   await setupGiftsApiMocks(page);
   await setupOrganizationsApiMocks(page);
   await setupActivityApiMocks(page);
+  await setupFeatureFlagsApiMocks(page);
 }

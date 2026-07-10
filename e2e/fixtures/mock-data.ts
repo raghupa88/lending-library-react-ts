@@ -1276,3 +1276,42 @@ export const MOCK_TRENDING_BOOKS = {
     { bookId: 'book-2', title: 'Siddhartha', author: 'Hermann Hesse', borrowCount: 7 },
   ],
 };
+
+// --- Feature flags (backend FeatureFlagResponse.java) — global on/off
+// switches, see ADR-028. b2b_tier defaults to enabled to match the seeded
+// production default (V19__feature_flags.sql) so every existing spec that
+// exercises the B2B tier keeps working unchanged. ---
+
+export const MOCK_ENABLED_FLAGS = { success: true, data: ['b2b_tier'] };
+export const MOCK_ENABLED_FLAGS_NO_B2B = { success: true, data: [] };
+
+export const MOCK_ADMIN_FEATURE_FLAGS = {
+  success: true,
+  data: [
+    {
+      id: 'flag-1',
+      key: 'b2b_tier',
+      name: 'B2B tier (schools & businesses)',
+      description: 'Bulk seat purchases and org join codes.',
+      enabled: true,
+      updatedAt: daysFromNow(-10),
+    },
+  ],
+};
+
+export const MOCK_CREATE_FLAG_SUCCESS = {
+  success: true,
+  data: {
+    id: 'flag-2',
+    key: 'new_flag',
+    name: 'New Flag',
+    description: null,
+    enabled: false,
+    updatedAt: daysFromNow(0),
+  },
+};
+
+export const MOCK_TOGGLE_FLAG_DISABLED = {
+  success: true,
+  data: { ...MOCK_ADMIN_FEATURE_FLAGS.data[0], enabled: false },
+};

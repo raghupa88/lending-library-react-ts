@@ -23,6 +23,7 @@ import { useToast } from "../../components/ui/toast";
 import { ApiError } from "../../lib/api";
 import type { PaymentInput } from "../../lib/payment";
 import { cn } from "../../lib/cn";
+import { useIsFeatureEnabled } from "../../features/feature-flags/queries";
 
 const purchaseSchema = z.object({
   name: z.string().trim().min(2, "Enter your school or company name"),
@@ -41,6 +42,7 @@ export default function Organization() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [checkoutPlan, setCheckoutPlan] = useState<Plan | null>(null);
 
+  const b2bTierEnabled = useIsFeatureEnabled("b2b_tier");
   const { data: org, isLoading: orgLoading } = useMyOrganizationQuery();
   const { data: plans, isLoading: plansLoading } = usePlansQuery();
   const purchaseOrg = usePurchaseOrganization();
@@ -174,6 +176,21 @@ export default function Organization() {
             </ul>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Existing owners keep their dashboard above regardless of the flag —
+  // disabling it only stops new purchases/joins, not access already paid
+  // for (mirrors OrganizationService.mine() not being gated server-side).
+  if (!b2bTierEnabled) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+        <EmptyState
+          icon={<Building2 aria-hidden="true" />}
+          title="Business accounts aren't available right now"
+          description="Check back later, or contact us if you're looking to set one up."
+        />
       </div>
     );
   }
