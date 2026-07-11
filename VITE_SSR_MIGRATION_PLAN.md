@@ -1,3 +1,9 @@
+> **Historical document — not current direction.** The app went the other
+> way: see `docs/adr/ADR-001-spa-first-ssr-later.md`, which converted this
+> repo to a plain client-side SPA and kept this file only as a record of the
+> SSR approach that was considered and set aside. Don't follow these steps
+> without first reading that ADR.
+
 # Migration Plan: Client-Side Vite to Native Vite SSR
 
 This document outlines the steps to "upgrade" the existing `lending-library-react-ts` application from a client-side SPA to a Server-Side Rendered (SSR) application, keeping Vite as the build tool.

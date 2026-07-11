@@ -9,10 +9,12 @@ A step-by-step guide for running, testing, and understanding the complete applic
 ```
 lending-library-react-ts/
 ├── backend/          Java 21 + Spring Boot 3.3 REST API (port 8080)
-└── src/              React 18 + TypeScript frontend (port 3000, SSR via server.js)
+└── src/              React 19 + TypeScript SPA, served by Vite (port 3000)
 ```
 
-The frontend calls the backend over HTTP. Both run as separate processes in local dev.
+The frontend is a plain client-side SPA (see `docs/adr/ADR-001-spa-first-ssr-later.md`
+— there is no server-side rendering here) that calls the backend over HTTP.
+Both run as separate processes in local dev.
 
 ---
 
@@ -107,7 +109,9 @@ Started LendingLibraryApplication in 3.x seconds
 **What just happened:**
 - Spring Boot started an embedded Tomcat on port **8080**
 - An **H2 in-memory database** was created (data lives only while the process runs)
-- `data.sql` seeded: 2 users, 2 subscriptions, 6 books, 1 active loan
+- `V2__seed_data.sql` (a Flyway migration, not a Spring Boot `data.sql`)
+  seeded: 2 users, 2 subscriptions, 6 books, 1 active loan, plus seed rows
+  for later features (courses, feature flags, …) added in later migrations
 
 **Verify the backend is healthy:**
 
@@ -128,7 +132,7 @@ npm install      # first time only
 npm run dev
 ```
 
-Frontend starts on **http://localhost:3000** (served by `server.js` with SSR — not the Vite default port 5173)
+Frontend starts on **http://localhost:3000** (configured in `vite.config.ts` — not the Vite default port 5173)
 
 ---
 
@@ -159,7 +163,11 @@ Open: **http://localhost:8080/h2-console**
 | Username | `sa` |
 | Password | *(leave blank)* |
 
-Use this to inspect tables (`USERS`, `BOOKS`, `LOANS`, `SUBSCRIPTIONS`, `ORDERS`) with SQL.
+Use this to inspect tables with SQL — core ones are `USERS`, `BOOKS`, `LOANS`,
+`SUBSCRIPTIONS`, `ORDERS`; there are ~20 more covering gifts, organizations,
+reservations, notifications, feature flags, and the Suvadi Learn platform
+(courses/tests/batches). See `backend/src/main/resources/db/migration/` for
+the full, authoritative schema (19 migrations).
 
 ---
 
@@ -237,6 +245,10 @@ curl -s -X POST http://localhost:8080/api/v1/auth/register \
   }' | jq .
 ```
 
+`RegisterRequest` also accepts optional `phone`, `address`, `referralCode`,
+`giftCode`, and `orgCode` fields — see `docs/adr/ADR-021` (referrals),
+`ADR-022` (gift subscriptions), and `ADR-024` (B2B org codes).
+
 ---
 
 ## 7. Run Backend Tests
@@ -246,22 +258,34 @@ cd backend
 mvn test
 ```
 
-All 15 tests run against H2 in-memory — no external dependencies needed.
+All tests run against H2 in-memory — no external dependencies needed (a
+separate `feat/testcontainers-its` branch adds a handful of real-Postgres
+integration tests; see `docs/adr/ADR-015`). As of this writing:
 
 ```
-Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 208, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
+That number only grows — don't treat it as a promise, just a sanity check
+that your local run is in the same ballpark.
+
 ### What each test covers
+
+36 test classes across `service/` and `controller/`, one roughly per
+service/controller pair. A representative sample:
 
 | Test class | Location | What it tests |
 |------------|----------|---------------|
 | `AuthServiceTest` | `service/` | register, duplicate email, login, wrong password, JWT round-trip |
 | `BookServiceTest` | `service/` | pagination, getById found/not found |
 | `LoanServiceTest` | `service/` | borrow success, no copies available, BASIC plan limit exceeded |
+| `OrganizationServiceTest` | `service/` | B2B seat purchase, joining, removing a member, feature-flag gating |
+| `FeatureFlagServiceTest` | `service/` | enable/disable, unknown-key fail-closed behavior |
 | `AuthControllerTest` | `controller/` | POST /auth/login → 200, 401, 400 (MockMvc) |
 | `BookControllerTest` | `controller/` | GET /books → 200 with paged response (MockMvc) |
+
+See `backend/src/test/java/com/lendinglibrary/` for the full suite.
 
 ### Run a single test class
 
@@ -299,9 +323,11 @@ com.lendinglibrary/
 │   ├── exception/      GlobalExceptionHandler (@RestControllerAdvice)
 │   └── filter/         JwtAuthFilter, CorrelationIdFilter
 ├── application/
-│   └── service/        Business logic (AuthService, BookService, LoanService, …)
+│   └── service/        Business logic (AuthService, BookService, LoanService, FeatureFlagService, …)
 ├── domain/
-│   ├── entity/         JPA entities (User, Book, Loan, Subscription, Order)
+│   ├── entity/         JPA entities — 35+, from User/Book/Loan/Subscription/Order
+│   │                   through Organization, Reservation, FeatureFlag, and the
+│   │                   Suvadi Learn entities (Course, Lesson, Attempt, Certificate, …)
 │   ├── enums/          Role, LoanStatus, SubscriptionPlan, …
 │   └── exception/      Domain exceptions (ResourceNotFoundException, …)
 └── infrastructure/
@@ -403,19 +429,16 @@ taskkill /PID <PID> /F
 
 ### H2 data is gone after restart
 
-This is expected — H2 is in-memory. The seed data in `data.sql` re-runs on every startup.
-
-### Browser blocks API calls (Content Security Policy)
-
-If the browser console shows a CSP error like `"connect-src" violated`, the frontend's `server.js` is missing a `connect-src` directive. Open `server.js` and ensure the CSP header includes:
-
-```
-connect-src 'self' http://localhost:8080;
-```
+This is expected — H2 is in-memory. Flyway's seed migration
+(`V2__seed_data.sql`) re-runs on every startup.
 
 ### CORS error in browser
 
-Make sure the frontend is running on `localhost:3000`. The backend whitelists both `localhost:3000` and `localhost:5173` in `SecurityConfig.java`.
+Make sure the frontend is running on `localhost:3000`. The backend's default
+allowed origins (`localhost:3000` and `localhost:5173`) are set via
+`CORS_ALLOWED_ORIGINS` in `application.yml` and wired up in
+`SecurityConfig.java` — override the env var if you're running the frontend
+somewhere else.
 
 ### Token expired (401 after an hour)
 
